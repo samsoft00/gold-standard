@@ -1,9 +1,10 @@
-import { Inject, Req } from '@tsed/common'
+import { Req } from '@tsed/common'
 import { Unauthorized } from '@tsed/exceptions'
-import { MongooseModel } from '@tsed/mongoose'
 import { Arg, OnVerify, Protocol } from '@tsed/passport'
 import { ExtractJwt, Strategy, StrategyOptions } from 'passport-jwt'
-import { User } from '../models/user/User'
+
+import dbo from '../services/MongoService'
+import { Admin } from '../models/admin/Admin'
 
 @Protocol<StrategyOptions>({
   name: 'jwt',
@@ -14,10 +15,8 @@ import { User } from '../models/user/User'
   }
 })
 export class JwtProtocol implements OnVerify {
-  constructor (@Inject(User) private readonly UserModel: MongooseModel<User>) {}
-
-  async $onVerify (@Req() req: Req, @Arg(0) user: User): Promise<boolean> {
-    const admin = await this.UserModel.findOne({ _id: user._id }).exec()
+  async $onVerify (@Req() req: Req, @Arg(0) user: Admin): Promise<boolean> {
+    const admin = await dbo.db().collection('admins').findOne({ _id: user._id })
     if (admin === null) throw new Unauthorized('Incorrect login credentials.')
 
     req.user = {

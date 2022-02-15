@@ -1,20 +1,45 @@
 import { BodyParams, PathParams, Post, Req } from '@tsed/common'
-import { Configuration, Controller, Inject } from '@tsed/di'
+import { Configuration, Controller } from '@tsed/di'
 import { BadRequest, NotFound, Unauthorized } from '@tsed/exceptions'
-import { MongooseModel } from '@tsed/mongoose'
+import { Pattern, Property, Required, Summary } from '@tsed/schema'
 import { Authenticate, Authorize } from '@tsed/passport'
-import { Description, Required } from '@tsed/schema'
 import { v4 } from 'uuid'
 import Joi from 'joi'
 
 import userQueueProcessor from '../../workers/UserQueue'
 import { IUserJob, IUserRequest, JobType } from '../../types'
 import { AuthService } from '../../services/user/AuthService'
+import dbo from '../../services/MongoService'
 import { RedisCache } from '../../utils/Cache'
-import { User } from '../../models/user/User'
 import { detach } from '../../utils/detach'
 import { validate } from 'email-validator'
 import Queue, { JobOptions } from 'bull'
+import dayjs from 'dayjs'
+
+class ResetPassword {
+  @Required()
+  password: string
+
+  @Required()
+  confirm_password: string
+}
+
+class UpdatePassword {
+  @Required()
+  @Property()
+  @Pattern(/^[a-zA-Z0-9!@#$%&*]{3,25}$/)
+  current_password: string
+
+  @Required()
+  @Property()
+  @Pattern(/^[a-zA-Z0-9!@#$%&*]{3,25}$/)
+  password: string
+
+  @Required()
+  @Property()
+  @Pattern(/^[a-zA-Z0-9!@#$%&*]{3,25}$/)
+  confirm_password: string
+}
 
 @Controller('/auth')
 export class AuthCtrl {
@@ -24,8 +49,7 @@ export class AuthCtrl {
   constructor (
     private readonly redisCache: RedisCache,
     private readonly authService: AuthService,
-    @Configuration() readonly config: Configuration,
-    @Inject(User) private readonly UserModel: MongooseModel<User>) {
+    @Configuration() readonly config: Configuration) {
     this.queue = new Queue('UserQueue', config.get<string>('redisUrl', process.env.REDIS_URL))
     this.queueOptn = {
       attempts: 3,
@@ -37,7 +61,7 @@ export class AuthCtrl {
 
   @Post('/login')
   @Authenticate('login')
-  @Description('This endpoint authenticate user')
+  @Summary('This endpoint authenticate user')
   async login (@Req() req: Req,
     @Required() @BodyParams('email') _email: string,
     @Required() @BodyParams('password') _password: string): Promise<any> {
@@ -47,6 +71,7 @@ export class AuthCtrl {
   // Logout user
   @Post('/logout')
   @Authorize()
+  @Summary('Logout administrator')
   async logOutUser (@Req() req: IUserRequest): Promise<any> {
     if (req.headers !== null || !('authorization' in req.headers)) {
       throw new Unauthorized('Unable to validate authorization key!')
@@ -59,7 +84,8 @@ export class AuthCtrl {
   // Update/Change password
   @Post('/update-password')
   @Authorize() // @Authorize('jwt')
-  async changePassword (@Req() req: IUserRequest, @BodyParams() body: any): Promise<any> {
+  @Summary('Update/change password')
+  async changePassword (@Req() req: IUserRequest, @BodyParams() body: UpdatePassword): Promise<any> {
     const schema = Joi.object({
       current_password: Joi.string().label('Current password')
         .required(),
@@ -78,24 +104,30 @@ export class AuthCtrl {
 
     await schema.validateAsync(body)
 
-    const customer = await this.UserModel.findById(req.user?._id).exec()
-    if (customer == null) throw new NotFound('User not found')
+    const customer = await dbo.db().collection('admins').findOne({ _id: req.user?._id })
+    if (customer === null) throw new NotFound('User not found')
 
     const check = await this.authService.validatePassword(customer.password, body.current_password)
     if (!check) throw new BadRequest('Current password did not match our record!')
 
     const newPassword = await this.authService.hashPassword(body.password)
-    await this.UserModel.updateOne({ _id: customer._id }, { password: newPassword })
+    await dbo.db().collection('admins').updateOne(
+      { _id: customer._id },
+      { $set: { password: newPassword, updated_datetime: dayjs().format('YYYY-MM-DDTHH:mm:ss') } }
+    )
 
     return { statusCode: 200, message: 'Password update successfully!', data: {} }
   }
 
   // Reset Password
   @Post('/reset/:reset_token')
-  async resetPassword (@PathParams('reset_token') resetToken: string, @BodyParams() body: any): Promise<any> {
+  @Summary('reset password')
+  async resetPassword (
+    @Required() @PathParams('reset_token') resetToken: string,
+      @BodyParams() body: ResetPassword): Promise<any> {
     const currentTime = Math.floor(Date.now() / 1000)
 
-    const customer = await this.UserModel.findOne({ reset_token: resetToken })
+    const customer = await dbo.db().collection('admins').findOne({ reset_token: resetToken })
 
     if (customer === null || Number(customer.reset_expires) < currentTime) {
       throw new BadRequest('Password reset token is invalid or expired')
@@ -112,9 +144,9 @@ export class AuthCtrl {
     await schema.validateAsync(body)
 
     const hash = await this.authService.hashPassword(body.password)
-    await this.UserModel.updateOne(
+    await dbo.db().collection('admins').updateOne(
       { id: customer.id },
-      { password: hash, $unset: { reset_expires: 1, reset_token: 1 } }
+      { $set: { password: hash }, $unset: { reset_expires: 1, reset_token: 1 } }
     )
 
     return {
@@ -126,21 +158,22 @@ export class AuthCtrl {
 
   // Generate password reset link
   @Post('/reset-password')
-  async generateResetLink (@BodyParams('email') email: string): Promise<any> {
+  @Summary('Generate password reset link')
+  async generateResetLink (@Required() @BodyParams('email') email: string): Promise<any> {
     email = email.trim().split(' ')[0]
 
     if (!validate(email)) throw new BadRequest('Valid email is required to reset password!')
     const msg = `If an account exists for ${email}, you will receive password reset instructions.`
 
-    const customer = await this.UserModel.findOne({ email: email }).exec()
+    const customer = await dbo.db().collection('admins').findOne({ email: email })
     if (customer === null) throw new BadRequest(msg)
 
     const resetToken = v4()
     const resetExpires = Math.floor(Date.now() / 1000) + 60 * 60 * 24
 
-    await this.UserModel.updateOne(
+    await dbo.db().collection('admins').updateOne(
       { email: customer.email },
-      { reset_expires: resetExpires, reset_token: resetToken }
+      { $set: { reset_expires: resetExpires, reset_token: resetToken } }
     )
 
     // send mail
@@ -166,12 +199,13 @@ export class AuthCtrl {
 
   // Validate reset password token
   @Post('/validate-reset-token')
+  @Summary('Validate reset password token')
   async validateResetPasswordToken (@BodyParams('password_reset_token') resetToken: string): Promise<any> {
     const currentTime = Math.floor(Date.now() / 1000)
 
     if (resetToken.trim() === '') throw new BadRequest('Password reset token field required!')
 
-    const customer = await this.UserModel.findOne({ reset_token: resetToken }).exec()
+    const customer = await dbo.db().collection('admins').findOne({ reset_token: resetToken })
     if (customer === null || Number(customer.reset_expires) < currentTime) {
       throw new BadRequest('Password reset token is invalid or expired')
     }

@@ -1,11 +1,12 @@
-import { ObjectID } from '@tsed/mongoose'
 
-declare module 'express' {
-  export interface Request {
-    user: {
-      _id: ObjectID
-      email: string
-      name?: string
+declare global {
+  namespace NodeJS {
+    interface ProcessEnv {
+      DB_URL: string
+      DB_NAME: string
+      MAX_POOL_SIZE: number
     }
   }
 }
+
+export {}

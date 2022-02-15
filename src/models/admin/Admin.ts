@@ -1,16 +1,13 @@
-import { Lowercase, Model, Trim, Unique } from '@tsed/mongoose'
-import { Default, Email, Format } from '@tsed/schema'
-import { BaseModel } from '../BaseModel'
+import { Default, Email, Format, Property } from '@tsed/schema'
 
-@Model({ name: 'admin' })
-export class User extends BaseModel {
-  @Trim()
-  @Unique(true)
+export class Admin {
+  @Property()
+  _id: string
+
   @Email()
-  @Lowercase(true)
   email: string
 
-  @Trim()
+  @Property()
   password: string
 
   reset_expires?: number

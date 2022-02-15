@@ -103,8 +103,9 @@
     "index.d.ts"
   ],  
   "exclude": [
-    "node_modules",
+    "src/**/*.spec.ts",
     "deploy-scripts",
+    "node_modules",
     "build",
     "tests"
   ]  

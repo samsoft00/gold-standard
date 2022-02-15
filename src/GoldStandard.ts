@@ -19,9 +19,6 @@ const REFRESH_EXP = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 1 // 7 days
 
 @Configuration({
   rootDir,
-  mongoose: {
-    url: 'mongodb+srv://lamarr:lamarrpassword@cluster0.mbq3p.mongodb.net/myFirstDatabase?retryWrites=true&w=majority'
-  },
   mount: { '/api/v1': [`${rootDir}/controllers/**/*.ts`] },
   componentsScan: [
     `${rootDir}/protocols/**/*.ts`
@@ -37,6 +34,11 @@ const REFRESH_EXP = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 1 // 7 days
     refreshSecret: process.env.REFRESH_SECRET,
     signOptions: { expiresIn: PASSWORD_EXP, refreshExpIn: REFRESH_EXP },
     resetPasswordExp: PASSWORD_RESET_EXP
+  },
+  email: {
+    name: 'Gold Standard',
+    sender: process.env.DEFAULT_EMAIL,
+    sendgridApikey: process.env.SENDGRID_API_KEY
   },
   configKeys: {
     AES_KEY: process.env.AES_KEY

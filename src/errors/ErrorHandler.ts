@@ -111,7 +111,7 @@ export class ErrorHandler implements ExceptionFilterMethods {
  * MongooseErrorFilter.catch
  * PlatformExceptions.catch
  */
-@Catch('MongoError')
+@Catch('MongoServerError')
 export class MongoHandler implements ExceptionFilterMethods {
   catch (e: any, ctx: BaseContext): void {
     const { response } = ctx
@@ -119,7 +119,7 @@ export class MongoHandler implements ExceptionFilterMethods {
     let message = e.message
     const status = 400
 
-    if (Object.is(e.code, 11000)) {
+    if (/11000/.test(e.code)) {
       const target: string[] = Object.values(e.keyValue)
       message = `${target[0]} is already in use`
     }

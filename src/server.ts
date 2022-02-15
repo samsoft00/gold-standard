@@ -1,5 +1,6 @@
 import { $log } from '@tsed/common'
 import { PlatformExpress } from '@tsed/platform-express'
+import db from './services/MongoService'
 import { GoldStandard } from './GoldStandard'
 
 async function server (): Promise<void> {
@@ -13,7 +14,7 @@ async function server (): Promise<void> {
       logger: { logRequest: false, disableBootstrapLog: true }
     })
 
-    // Test: ensure everything run perfectly.
+    // Test flight.
     if (process.env.AUTO_SHUTDOWN_AFTER !== undefined) {
       const exitAfter = parseInt(process.env.AUTO_SHUTDOWN_AFTER, 10)
 
@@ -29,7 +30,9 @@ async function server (): Promise<void> {
       }, exitAfter * 1000)
     }
 
+    await db.connect()
     await platform.listen()
+
     $log.debug('Server initialized')
   } catch (er) {
     $log.error(er)

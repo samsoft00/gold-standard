@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "description": "Endpoint services for Gold Standard Cooperative Admin",
   "scripts": {
-    "start": "nodemon --watch \"src/**/*.ts\" --ignore \"node_modules/**/*\" --exec ts-node src/server.ts",
+    "start": "nodemon",
+    "build": "rimraf ./build && tsc",
+    "start:prod": "npm run build && node build/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "engines": {

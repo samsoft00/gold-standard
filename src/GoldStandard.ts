@@ -11,6 +11,7 @@ import express from 'express'
 import compress from 'compression'
 
 import './errors/ErrorHandler'
+import { specOS3 } from './utils/specOS3'
 
 const rootDir = Path.resolve(__dirname)
 const PASSWORD_EXP = Math.floor(Date.now() / 1000) + 60 * 60 * 7 // 1hours
@@ -22,12 +23,9 @@ const REFRESH_EXP = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 1 // 7 days
   mount: { '/api/v1': [`${rootDir}/controllers/**/*.ts`] },
   componentsScan: [
     `${rootDir}/protocols/**/*.ts`
-    // `${rootDir}/middlewares/**/*.ts`
-    // `${rootDir}/services/**/*.ts`,
-    // `${rootDir}/utils/**/*.ts`
   ],
   exclude: ['**/*.spec.ts'],
-  swagger: [{ path: '/api/docs' }],
+  swagger: [{ path: '/api/docs', specVersion: '3.0.1', spec: specOS3 }],
   acceptMimes: ['application/json'],
   auth: {
     secret: process.env.ACCESS_TOKEN_SECRET,

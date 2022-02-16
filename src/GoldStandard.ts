@@ -57,7 +57,7 @@ export class GoldStandard {
   private middleware (): void {
     const corsOptions = {
       credentials: true,
-      origin: [],
+      origin: true,
       optionsSuccessStatus: 200
     }
 

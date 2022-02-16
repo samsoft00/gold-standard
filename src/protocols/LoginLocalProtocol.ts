@@ -39,6 +39,7 @@ export class LoginLocalProtocol implements OnVerify {
     if (Object.is(user.is_disabled, true)) throw new Unauthorized('Account disabled or Unauthorized Access')
 
     // Generate token
+    delete user.password
     const token = this.createJwt(user)
     return { user: user, token }
   }

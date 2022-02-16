@@ -1,7 +1,7 @@
 import { Configuration, Inject, Injectable } from '@tsed/di'
 import { AttachmentData } from '@sendgrid/helpers/classes/attachment'
-import * as helpers from '@sendgrid/helpers'
-import * as sgMail from '@sendgrid/mail'
+import helpers from '@sendgrid/helpers'
+import sgMail from '@sendgrid/mail'
 import { isObject } from '@tsed/core'
 import { Logger } from '@tsed/common'
 

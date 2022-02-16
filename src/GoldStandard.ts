@@ -12,6 +12,7 @@ import compress from 'compression'
 
 import './errors/ErrorHandler'
 import { specOS3 } from './utils/specOS3'
+import { HomeCtrl } from './controllers/HomeCtrl'
 
 const rootDir = Path.resolve(__dirname)
 const PASSWORD_EXP = Math.floor(Date.now() / 1000) + 60 * 60 * 7 // 1hours
@@ -20,7 +21,10 @@ const REFRESH_EXP = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 1 // 7 days
 
 @Configuration({
   rootDir,
-  mount: { '/api/v1': [`${rootDir}/controllers/**/*.ts`] },
+  mount: {
+    '/': [HomeCtrl],
+    '/api/v1': [`${rootDir}/controllers/**/*.ts`]
+  },
   componentsScan: [
     `${rootDir}/protocols/**/*.ts`
   ],

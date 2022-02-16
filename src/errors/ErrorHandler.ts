@@ -107,10 +107,6 @@ export class ErrorHandler implements ExceptionFilterMethods {
   }
 }
 
-/**
- * MongooseErrorFilter.catch
- * PlatformExceptions.catch
- */
 @Catch('MongoServerError')
 export class MongoHandler implements ExceptionFilterMethods {
   catch (e: any, ctx: BaseContext): void {

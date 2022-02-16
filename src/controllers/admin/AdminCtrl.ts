@@ -121,7 +121,7 @@ export class AdminCtrl {
 
     const decoded = jwt.verify(inviteLink, configKeys.AES_KEY) as JwtPayload
 
-    const admin = await dbo.db().collection('admins').findOne({ _id: decoded.id })
+    const admin = await dbo.db().collection('admins').findOne({ _id: new dbo.Id(decoded.id) })
     if (admin === null) throw new NotFound('Admin not found')
 
     const hashPassword = await this.authService.hashPassword(payload.password)

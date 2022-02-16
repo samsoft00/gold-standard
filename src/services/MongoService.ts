@@ -7,7 +7,7 @@ const DB_URL = process.env.DB_URL ?? 'mongodb+srv://lamarr:lamarrpassword@cluste
 const MAX_POOL_SIZE: any = process.env.MAX_POOL_SIZE ?? 50
 
 export default {
-  id: ObjectId,
+  Id: ObjectId,
   db: () => {
     return db
   },

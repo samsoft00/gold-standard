@@ -40,7 +40,7 @@ export class LoginLocalProtocol implements OnVerify {
 
     // Generate token
     const token = this.createJwt(user)
-    return { user: user.toJSON(), token }
+    return { user: user, token }
   }
 
   createJwt (user: any): string {

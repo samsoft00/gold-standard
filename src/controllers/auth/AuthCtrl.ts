@@ -15,6 +15,7 @@ import { detach } from '../../utils/detach'
 import { validate } from 'email-validator'
 import Queue, { JobOptions } from 'bull'
 import dayjs from 'dayjs'
+import { JwtAuth } from '../../decorators/jwtAuth'
 
 class ResetPassword {
   @Required()
@@ -71,6 +72,7 @@ export class AuthCtrl {
 
   // Logout user
   @Post('/logout')
+  @JwtAuth()
   @Authorize()
   @Summary('Logout administrator')
   async logOutUser (@Req() req: IUserRequest): Promise<any> {
@@ -85,6 +87,7 @@ export class AuthCtrl {
   // Update/Change password
   @Post('/update-password')
   @Authorize() // @Authorize('jwt')
+  @JwtAuth()
   @Summary('Update/change password')
   async changePassword (@Req() req: IUserRequest, @BodyParams() body: UpdatePassword): Promise<any> {
     const schema = Joi.object({

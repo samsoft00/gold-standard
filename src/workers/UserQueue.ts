@@ -1,5 +1,5 @@
 import { Job } from 'bull'
-import { IUserJob } from '../types'
+import { IUserJob, JobType } from '../types'
 
 /**
  * This handle user queue
@@ -10,7 +10,10 @@ export default async function (job: Job<IUserJob>): Promise<boolean> {
   const { jobName } = job.data
 
   switch (jobName) {
-    case 'invite':
+    case JobType.SEND_INVITE:
+      console.log(job.data)
+      return await Promise.resolve(true)
+    case JobType.RESET_PASSWORD:
       console.log(job.data)
       return await Promise.resolve(true)
   }

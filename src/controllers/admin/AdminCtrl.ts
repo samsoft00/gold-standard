@@ -12,6 +12,8 @@ import { AuthService } from '../../services/user/AuthService'
 import { IUserJob, JobType } from '../../types'
 import Queue, { JobOptions } from 'bull'
 import dayjs from 'dayjs'
+import { Authorize } from '@tsed/passport'
+import { JwtAuth } from '../../decorators/jwtAuth'
 
 export class AcceptInvite {
   @Required()
@@ -40,6 +42,8 @@ export class AdminCtrl {
   }
 
   @Post('/')
+  @JwtAuth()
+  @Authorize()
   @Summary('Endpoint to onboard new administrator')
   async inviteUser (@Required() @BodyParams('email') email: string): Promise<any> {
     const configKeys = this.config.get('configKeys')

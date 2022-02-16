@@ -1,9 +1,10 @@
 import { Get, Req } from '@tsed/common'
-import { Summary } from '@tsed/schema'
+import { Name, Summary } from '@tsed/schema'
 import { Configuration, Controller } from '@tsed/di'
 import { UserService } from '../../services/user/UserService'
 
 @Controller({ path: '/users' })
+@Name('Users')
 export class UserCtrl {
   /**
      * Search user by

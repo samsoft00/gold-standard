@@ -1,7 +1,7 @@
 import { BodyParams, PathParams, Post, Req } from '@tsed/common'
 import { Configuration, Controller } from '@tsed/di'
 import { BadRequest, NotFound, Unauthorized } from '@tsed/exceptions'
-import { Pattern, Property, Required, Summary } from '@tsed/schema'
+import { Name, Pattern, Property, Required, Summary } from '@tsed/schema'
 import { Authenticate, Authorize } from '@tsed/passport'
 import { v4 } from 'uuid'
 import Joi from 'joi'
@@ -42,6 +42,7 @@ class UpdatePassword {
 }
 
 @Controller('/auth')
+@Name('Auth')
 export class AuthCtrl {
   queue: Queue.Queue<IUserJob>
   queueOptn: JobOptions

@@ -1,5 +1,5 @@
 import { BodyParams, Configuration, Controller, PathParams, Post } from '@tsed/common'
-import { Description, Get, Required, Returns, Summary } from '@tsed/schema'
+import { Description, Get, Name, Required, Returns, Summary } from '@tsed/schema'
 import jwt, { JwtPayload } from 'jsonwebtoken'
 import dbo from '../../services/MongoService'
 import Joi from 'joi'
@@ -22,6 +22,7 @@ export class AcceptInvite {
 }
 
 @Controller({ path: '/admin' })
+@Name('Admin')
 export class AdminCtrl {
   queue: Queue.Queue<IUserJob>
   queueOptn: JobOptions

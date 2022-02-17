@@ -1,4 +1,4 @@
-import { Description, Email, Enum, Name, Optional, Pattern, Required, Summary, Title } from '@tsed/schema'
+import { Description, Enum, Name, Optional, Pattern, Required, Summary, Title } from '@tsed/schema'
 import { Get, QueryParams, Req } from '@tsed/common'
 import { Configuration, Controller } from '@tsed/di'
 import dayjs from 'dayjs'
@@ -6,10 +6,9 @@ import dayjs from 'dayjs'
 import { UserService } from '../../services/user/UserService'
 
 export class UserQueryParams {
-  @Email()
   @Optional()
-  @Description('Search user by email address')
-  email?: string
+  @Description('Search user by name')
+  name?: string
 
   @Required()
   @Description('Total number of expected records')
@@ -66,11 +65,11 @@ export class UserCtrl {
 
     query.month_joined = query.month_joined ?? ''
     query.year_joined = parseInt(query.month_joined ?? '')
-    query.email = query.email as string
+    query.name = decodeURIComponent(query.name ?? '')
 
     const q = {
       ...(['active', 'inactive'].includes(query.user_status) && { active: { $exists: true, $eq: query.user_status } }),
-      ...(/^[+a-z0-9._-]+@[a-z0-9._-]+\.[a-z0-9_-]+$/.test(query.email) && { email: query.email }),
+      // ...(query.name !== '' && { name: { $regex: /query.name/, $options: 'i' } }),
       ...(query.month_joined !== '' && { createdAt: { $month: dayjs().month(this.months[query.month_joined]).toDate() } }),
       ...(!isNaN(query.year_joined) && { createdAt: { $year: dayjs().year(query.year_joined).toDate() } })
     }

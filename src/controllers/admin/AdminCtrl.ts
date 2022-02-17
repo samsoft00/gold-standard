@@ -55,7 +55,7 @@ export class AdminCtrl {
     const result = await dbo.db().collection('admins').insertOne({
       email,
       is_disabled: false,
-      reg_date: new Date()
+      created_date: new Date()
     })
 
     const link = jwt.sign({ id: result.insertedId.toString() }, configKeys.AES_KEY, { expiresIn: '3h' })

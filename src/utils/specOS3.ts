@@ -10,10 +10,13 @@ export const specOS3: Partial<OpenSpec3> = {
   info: specInfo,
   components: {
     securitySchemes: {
-      bearerAuth: {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: ''
+      basic: {
+        // type: 'http',
+        // scheme: 'basic',
+        // bearerFormat: ''
+        type: 'apiKey',
+        name: '',
+        in: 'header'
       }
     }
   }

@@ -1,7 +1,7 @@
-import { BodyParams, PathParams, Post, Req } from '@tsed/common'
+import { BodyParams, PathParams, Post, QueryParams, Req } from '@tsed/common'
 import { Configuration, Controller } from '@tsed/di'
 import { BadRequest, NotFound, Unauthorized } from '@tsed/exceptions'
-import { Name, Pattern, Property, Required, Summary } from '@tsed/schema'
+import { Get, Name, Pattern, Property, Required, Summary } from '@tsed/schema'
 import { Authenticate, Authorize } from '@tsed/passport'
 import { v4 } from 'uuid'
 import Joi from 'joi'
@@ -172,26 +172,26 @@ export class AuthCtrl {
     const customer = await dbo.db().collection('admins').findOne({ email: email })
     if (customer === null) throw new BadRequest(msg)
 
-    const resetToken = v4()
+    const resetHash = v4()
     const resetExpires = Math.floor(Date.now() / 1000) + 60 * 60 * 24
 
     await dbo.db().collection('admins').updateOne(
       { email: customer.email },
-      { $set: { reset_expires: resetExpires, reset_token: resetToken } }
+      { $set: { reset_expires: resetExpires, reset_token: resetHash } }
     )
 
     // send mail
     detach(this.queue.add({
       jobName: JobType.RESET_PASSWORD,
       email: customer.email,
-      reset_token: resetToken,
+      reset_token: encodeURIComponent(resetHash),
       frontend_login_url: this.config.get<string>('front_end_url')
     }, this.queueOptn))
 
     const data = {}
     // For test purpose
     if (Object.is(this.config.env, 'test')) {
-      Object.assign(data, { reset_token: resetToken })
+      Object.assign(data, { reset_token: resetHash })
     }
 
     return {
@@ -202,21 +202,22 @@ export class AuthCtrl {
   }
 
   // Validate reset password token
-  @Post('/validate-reset-token')
-  @Summary('Validate reset password token')
-  async validateResetPasswordToken (@BodyParams('password_reset_token') resetToken: string): Promise<any> {
+  @Get('/confirm-reset-token')
+  @Summary('Confirm reset password token')
+  async validateResetPasswordToken (@QueryParams('reset_hash') resetHash: string): Promise<any> {
     const currentTime = Math.floor(Date.now() / 1000)
+    const errMsg = 'Invalid or expire reset details'
 
-    if (resetToken.trim() === '') throw new BadRequest('Password reset token field required!')
+    if (resetHash.trim() === '') throw new BadRequest('Password reset hash is required!')
 
-    const customer = await dbo.db().collection('admins').findOne({ reset_token: resetToken })
+    const customer = await dbo.db().collection('admins').findOne({ reset_token: decodeURIComponent(resetHash) })
     if (customer === null || Number(customer.reset_expires) < currentTime) {
-      throw new BadRequest('Password reset token is invalid or expired')
+      throw new BadRequest(errMsg)
     }
 
     return {
       statusCode: 200,
-      message: 'Password reset token is valid!',
+      message: 'Password reset hash is valid!',
       data: {}
     }
   }

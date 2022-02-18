@@ -16,7 +16,7 @@ import { Admin } from '../models/admin/Admin'
 })
 export class JwtProtocol implements OnVerify {
   async $onVerify (@Req() req: Req, @Arg(0) user: Admin): Promise<boolean> {
-    const admin = await dbo.db().collection('admins').findOne({ _id: user._id })
+    const admin = await dbo.db().collection('admins').findOne({ _id: new dbo.Id(user._id) })
     if (admin === null) throw new Unauthorized('Incorrect login credentials.')
 
     req.user = {

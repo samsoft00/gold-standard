@@ -76,7 +76,7 @@ export class AuthCtrl {
   @Authorize()
   @Summary('Logout administrator')
   async logOutUser (@Req() req: IUserRequest): Promise<any> {
-    if (req.headers !== null || !('authorization' in req.headers)) {
+    if (req.headers === null || !('authorization' in req.headers)) {
       throw new Unauthorized('Unable to validate authorization key!')
     }
 

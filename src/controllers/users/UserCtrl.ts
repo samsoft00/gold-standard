@@ -1,5 +1,5 @@
 import { Description, Enum, Name, Optional, Pattern, Required, Summary, Title } from '@tsed/schema'
-import { Get, QueryParams, Req, Res } from '@tsed/common'
+import { Get, PathParams, QueryParams, Req, Res } from '@tsed/common'
 import { Configuration, Controller } from '@tsed/di'
 import { Transform, pipeline } from 'stream'
 import { stringify } from 'csv'
@@ -9,6 +9,8 @@ import dayjs from 'dayjs'
 import { UserService } from '../../services/user/UserService'
 import dbo from '../../services/MongoService'
 import { ObjectId } from 'mongodb'
+import { BadRequest, NotFound } from '@tsed/exceptions'
+import { IResponseDto } from '../../types/interfaces/IResponseDto'
 
 const asyncPipeline = promisify(pipeline)
 
@@ -126,6 +128,24 @@ export class UserCtrl {
       statusCode: 200,
       message: 'successful',
       data: results
+    }
+  }
+
+  @Get('/:user_id')
+  @Summary('view a users details')
+  async viewUserDetails (@Req() req: Req, @Required() @PathParams('user_id') userId: string): Promise<IResponseDto<any>> {
+    if (!ObjectId.isValid(userId)) throw new BadRequest('Invalid user id')
+
+    const user = await dbo.db().collection('users').findOne({ _id: new dbo.Id(userId) })
+    if (user === null) throw new NotFound(`User ID: ${userId} not found`)
+
+    delete user.password
+    delete user.__v
+
+    return {
+      statusCode: 200,
+      message: 'successful',
+      data: user
     }
   }
 

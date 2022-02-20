@@ -1,4 +1,4 @@
-import { Description, Enum, Name, Optional, Pattern, Required, Summary, Title } from '@tsed/schema'
+import { Delete, Description, Enum, Name, Optional, Pattern, Required, Summary, Title } from '@tsed/schema'
 import { Get, PathParams, QueryParams, Req, Res } from '@tsed/common'
 import { Configuration, Controller } from '@tsed/di'
 import { Transform, pipeline } from 'stream'
@@ -75,6 +75,7 @@ const formatQry = (query: UserQueryParams): any => {
   query.name = decodeURIComponent(query.name ?? '')
 
   return {
+    isDeleted: { $exists: false },
     ...(['active', 'inactive'].includes(query.user_status) && { active: { $exists: true, $eq: query.user_status } }),
     // ...(query.name !== '' && { name: { $regex: /query.name/, $options: 'i' } }),
     ...(query.month_joined !== '' && { createdAt: { $month: dayjs().month(months[query.month_joined]).toDate() } }),
@@ -146,6 +147,32 @@ export class UserCtrl {
       statusCode: 200,
       message: 'successful',
       data: user
+    }
+  }
+
+  @Delete('/:user_id')
+  @Summary('Ban or Delete a user')
+  async deleteUser (@Req() req: Req, @Required() @PathParams('user_id') userId: string): Promise<IResponseDto<any>> {
+    if (!ObjectId.isValid(userId)) throw new BadRequest('Invalid user id')
+    const ERR_MSG = 'Error occur while updating user, kindly confirm user ID and try again'
+
+    const result = await dbo.db().collection('users').findOneAndUpdate(
+      { _id: new dbo.Id(userId) },
+      { $set: { isDeleted: true } },
+      { returnDocument: 'after' }
+    )
+
+    if (result.ok !== 1) throw new BadRequest(ERR_MSG)
+    if ((result.lastErrorObject != null) &&
+    'updatedExisting' in result.lastErrorObject &&
+    result.lastErrorObject.updatedExisting !== true) {
+      throw new BadRequest(ERR_MSG)
+    }
+
+    return {
+      statusCode: 200,
+      message: 'successful',
+      data: result.value
     }
   }
 

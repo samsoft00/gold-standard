@@ -7,7 +7,7 @@ import { In, Returns, Security } from '@tsed/schema'
  * Set JwtAuth access on decorated route
  * @param options
  */
-export function JwtAuth (options: AuthorizeOptions = {}): any {
+export function OpenApiJwtAuth (options: AuthorizeOptions = {}): any {
   return useDecorators(
     Authenticate('jwt', options),
     Security('jwt'),

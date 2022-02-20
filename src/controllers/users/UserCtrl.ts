@@ -12,6 +12,7 @@ import { ObjectId } from 'mongodb'
 import { BadRequest, NotFound } from '@tsed/exceptions'
 import { IResponseDto } from '../../types/interfaces/IResponseDto'
 import { Authorize } from '@tsed/passport'
+import { OpenApiJwtAuth } from '../../decorators/OpenApiJwtAuth'
 
 const asyncPipeline = promisify(pipeline)
 
@@ -84,6 +85,7 @@ const formatQry = (query: UserQueryParams): any => {
   }
 }
 
+@OpenApiJwtAuth()
 @Authorize()
 @Controller({ path: '/user' })
 @Name('Users')

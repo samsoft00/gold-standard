@@ -11,6 +11,7 @@ import dbo from '../../services/MongoService'
 import { ObjectId } from 'mongodb'
 import { BadRequest, NotFound } from '@tsed/exceptions'
 import { IResponseDto } from '../../types/interfaces/IResponseDto'
+import { Authorize } from '@tsed/passport'
 
 const asyncPipeline = promisify(pipeline)
 
@@ -83,7 +84,8 @@ const formatQry = (query: UserQueryParams): any => {
   }
 }
 
-@Controller({ path: '/users' })
+@Authorize()
+@Controller({ path: '/user' })
 @Name('Users')
 export class UserCtrl {
   /**

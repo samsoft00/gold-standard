@@ -30,11 +30,11 @@ export class UserQueryParams {
 
   @Pattern(/^d{4}/)
   @Description('Year joined, e.g 2022')
-  year_joined?: number
+  year_join?: number
 
   @Title('Month joined')
   @Description('month joined, e.g Febuary')
-  month_joined?: string
+  month_join?: string
 }
 
 enum Gender {
@@ -71,16 +71,16 @@ const months: {[key: string]: number} = {
 }
 
 const formatQry = (query: UserQueryParams): any => {
-  query.month_joined = query.month_joined ?? ''
-  query.year_joined = parseInt(query.month_joined ?? '')
+  query.month_join = query.month_join ?? ''
+  query.year_join = parseInt(query.month_join ?? '')
   query.name = decodeURIComponent(query.name ?? '')
 
   return {
     isDeleted: { $exists: false },
     ...(['active', 'inactive'].includes(query.user_status) && { active: { $exists: true, $eq: query.user_status } }),
     // ...(query.name !== '' && { name: { $regex: /query.name/, $options: 'i' } }),
-    ...(query.month_joined !== '' && { createdAt: { $month: dayjs().month(months[query.month_joined]).toDate() } }),
-    ...(!isNaN(query.year_joined) && { createdAt: { $year: dayjs().year(query.year_joined).toDate() } })
+    ...(query.month_join !== '' && { createdAt: { $month: dayjs().month(months[query.month_join]).toDate() } }),
+    ...(!isNaN(query.year_join) && { createdAt: { $year: dayjs().year(query.year_join).toDate() } })
   }
 }
 

@@ -3,19 +3,19 @@ import { Configuration, Controller } from '@tsed/di'
 import { BadRequest, NotFound, Unauthorized } from '@tsed/exceptions'
 import { Get, Name, Pattern, Property, Required, Summary } from '@tsed/schema'
 import { Authenticate, Authorize } from '@tsed/passport'
+import { validate } from 'email-validator'
+import Queue, { JobOptions } from 'bull'
+import dayjs from 'dayjs'
 import { v4 } from 'uuid'
 import Joi from 'joi'
 
 import userQueueProcessor from '../../workers/UserQueue'
 import { IUserJob, IUserRequest, JobType } from '../../types'
 import { AuthService } from '../../services/user/AuthService'
+import { OpenApiJwtAuth } from '../../decorators/OpenApiJwtAuth'
 import dbo from '../../services/MongoService'
 import { RedisCache } from '../../utils/Cache'
 import { detach } from '../../utils/detach'
-import { validate } from 'email-validator'
-import Queue, { JobOptions } from 'bull'
-import dayjs from 'dayjs'
-import { OpenApiJwtAuth } from '../../decorators/OpenApiJwtAuth'
 
 class ResetPassword {
   @Required()

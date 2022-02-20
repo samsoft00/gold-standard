@@ -1,18 +1,18 @@
 import { BodyParams, Configuration, Controller, PathParams, Post } from '@tsed/common'
 import { Description, Get, Name, Required, Returns, Summary } from '@tsed/schema'
 import jwt, { JwtPayload } from 'jsonwebtoken'
-import dbo from '../../services/MongoService'
+import { Authorize } from '@tsed/passport'
+import Queue, { JobOptions } from 'bull'
+import dayjs from 'dayjs'
 import Joi from 'joi'
 
+import dbo from '../../services/MongoService'
 import userQueueProcessor from '../../workers/UserQueue'
 import { IResponseDto } from '../../types/interfaces/IResponseDto'
 import { detach } from '../../utils/detach'
 import { BadRequest, NotFound } from '@tsed/exceptions'
 import { AuthService } from '../../services/user/AuthService'
 import { IUserJob, JobType } from '../../types'
-import Queue, { JobOptions } from 'bull'
-import dayjs from 'dayjs'
-import { Authorize } from '@tsed/passport'
 import { OpenApiJwtAuth } from '../../decorators/OpenApiJwtAuth'
 
 export class AcceptInvite {

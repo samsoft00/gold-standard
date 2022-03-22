@@ -4,21 +4,21 @@ import {GoldStandard} from '../../GoldStandard'
 import { AuthCtrl } from './AuthCtrl'
 
 describe('AuthCtrl', () => {
-  let request: SuperTest.SuperTest<SuperTest.Test>
+  // let request: SuperTest.SuperTest<SuperTest.Test>
 
-  beforeEach(
-    PlatformTest.bootstrap(GoldStandard, { 
-      mount: { '/': [AuthCtrl] } 
-    })
-  )
+  // beforeEach(
+  //   PlatformTest.bootstrap(GoldStandard, { 
+  //     mount: { '/': [AuthCtrl] } 
+  //   })
+  // )
 
-  beforeEach(
-    PlatformTest.inject([PlatformApplication], (app: PlatformApplication) => {
-      request = SuperTest(app.raw)
-    })
-  )
+  // beforeEach(
+  //   PlatformTest.inject([PlatformApplication], (app: PlatformApplication) => {
+  //     request = SuperTest(app.raw)
+  //   })
+  // )
 
-  afterEach(PlatformTest.reset)
+  // afterEach(PlatformTest.reset)
 
   it('should call GET /auth', () => {
     // const response = await request.get('/auth').expect(200)

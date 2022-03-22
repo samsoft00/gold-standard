@@ -12,7 +12,6 @@ import { UserService } from '../../services/user/UserService'
 import { IResponseDto } from '../../types/interfaces/IResponseDto'
 import { BadRequest, NotFound } from '@tsed/exceptions'
 import dbo from '../../services/MongoService'
-import { PaginateResponse } from '../../types/PaginateResponse'
 
 const asyncPipeline = promisify(pipeline)
 
@@ -91,7 +90,7 @@ export class UserCtrl {
 
   @Get('/')
   async fetchAllUsers (@Req() req: Req,
-    @Required() @QueryParams() query: UserQueryParams): Promise<PaginateResponse<any>> {
+    @Required() @QueryParams() query: UserQueryParams): Promise<any> {
     const q = formatQry(query)
 
     const sort: Sort = { _id: -1, createdAt: 1 }

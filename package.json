@@ -21,10 +21,7 @@
       "dist",
       "**/*.spec.ts",
       "node_modules/**"
-    ],
-    "rules": {
-      "@typescript-eslint/strict-boolean-expressions": 0
-    }
+    ]
   },
   "devDependencies": {
     "@types/bull": "^3.15.7",

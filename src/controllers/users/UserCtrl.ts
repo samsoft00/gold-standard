@@ -1,41 +1,29 @@
-import { Delete, Description, Enum, Name, Optional, Pattern, Required, Summary, Title } from '@tsed/schema'
+import { Delete, Name, Required } from '@tsed/schema'
 import { Get, PathParams, QueryParams, Req, Res } from '@tsed/common'
 import { Configuration, Controller } from '@tsed/di'
 import { Transform, pipeline } from 'stream'
 import { Authorize } from '@tsed/passport'
-import { ObjectId } from 'mongodb'
+import { ObjectId, Sort } from 'mongodb'
 import { stringify } from 'csv'
 import { promisify } from 'util'
 import dayjs from 'dayjs'
 
 import { UserService } from '../../services/user/UserService'
 import { IResponseDto } from '../../types/interfaces/IResponseDto'
-import { OpenApiJwtAuth } from '../../decorators/OpenApiJwtAuth'
 import { BadRequest, NotFound } from '@tsed/exceptions'
 import dbo from '../../services/MongoService'
+import { PaginateResponse } from '../../types/PaginateResponse'
 
 const asyncPipeline = promisify(pipeline)
 
-export class UserQueryParams {
-  @Optional()
-  @Description('Search user by name')
+export interface UserQueryParams {
   name?: string
-
-  @Required()
-  @Description('Total number of expected records')
-  limit: number = 10
-
-  @Enum('active', 'inactive')
-  @Description('Current user status')
+  limit: number
   user_status: string
-
-  @Pattern(/^d{4}/)
-  @Description('Year joined, e.g 2022')
   year_join?: number
-
-  @Title('Month joined')
-  @Description('month joined, e.g Febuary')
   month_join?: string
+  previous_cursor?: string
+  next_cursor?: string
 }
 
 enum Gender {
@@ -56,7 +44,7 @@ interface UserList {
   createdAt: Date
 }
 
-const months: {[key: string]: number} = {
+const months: { [key: string]: number } = {
   january: 0,
   february: 1,
   march: 2,
@@ -77,15 +65,15 @@ const formatQry = (query: UserQueryParams): any => {
   query.name = decodeURIComponent(query.name ?? '')
 
   return {
-    isDeleted: { $exists: false },
-    ...(['active', 'inactive'].includes(query.user_status) && { active: { $exists: true, $eq: query.user_status } }),
+    // isDeleted: { $exists: false },
     // ...(query.name !== '' && { name: { $regex: /query.name/, $options: 'i' } }),
+    ...(['active', 'inactive'].includes(query.user_status) && { active: { $exists: true, $eq: query.user_status } }),
     ...(query.month_join !== '' && { createdAt: { $month: dayjs().month(months[query.month_join]).toDate() } }),
     ...(!isNaN(query.year_join) && { createdAt: { $year: dayjs().year(query.year_join).toDate() } })
+
   }
 }
 
-@OpenApiJwtAuth()
 @Authorize()
 @Controller({ path: '/user' })
 @Name('Users')
@@ -99,45 +87,67 @@ export class UserCtrl {
 
   constructor (
     private readonly userService: UserService,
-    @Configuration() readonly config: Configuration) {}
+    @Configuration() readonly config: Configuration) { }
 
   @Get('/')
-  @Summary('fetch all users')
   async fetchAllUsers (@Req() req: Req,
-    @Required() @QueryParams() query: UserQueryParams): Promise<any> {
-    // validate query params
-    query.limit += 0
-    query.limit = query.limit > 30 ? 30 : query.limit
-
+    @Required() @QueryParams() query: UserQueryParams): Promise<PaginateResponse<any>> {
     const q = formatQry(query)
 
-    const results = await this.userService.fetchAll(q, {
-      limit: query.limit,
-      sort: {
-        _id: 1,
-        createdAt: 1
-      },
-      projection: {
-        _id: 1,
-        name: 1,
-        email: 1,
-        active: 1,
-        profileImageUrl: 1,
-        // Ban Account
-        // Delete
-        createdAt: 1
+    const sort: Sort = { _id: -1, createdAt: 1 }
+    const limit = +query.limit > 30 ? 30 : +query.limit
+    const qryPrev = query.previous_cursor !== undefined && ObjectId.isValid(query.previous_cursor)
+    const qryNext = query.next_cursor !== undefined && ObjectId.isValid(query.next_cursor)
+
+    let hasNext: boolean = false
+    let hasPrev: boolean = false
+
+    if (qryPrev) {
+      q._id = { $gt: new dbo.Id(query.previous_cursor) }
+      sort._id = 1
+    } else if (qryNext) {
+      q._id = { $lt: new dbo.Id(query.next_cursor) }
+    }
+
+    const r = await dbo.db().collection('users').find(q, { sort, limit }).toArray()
+
+    if (qryPrev) r.reverse()
+
+    if (r.length > 0) {
+      q._id = { $lt: new dbo.Id(r[r.length - 1]._id) }
+      let check = await dbo.db().collection('users').findOne(q)
+      hasNext = check !== null
+
+      q._id = { $gt: new dbo.Id(r[0]._id) }
+      check = await dbo.db().collection('users').findOne(q)
+      hasPrev = check !== null
+    }
+
+    console.log(r.length, query, q)
+
+    const data = r.map(l => {
+      return {
+        _id: l._id,
+        name: l.name,
+        email: l.email,
+        active: l.active,
+        profileImageUrl: l.profileImageUrl,
+        is_banned: l.isBanned,
+        is_deleted: l.isDeleted,
+        createdAt: l.createdAt
       }
     })
 
     return {
       statusCode: 200,
       message: 'successful',
-      data: results
+      data,
+      ...(hasNext && { next_cursor: r[r.length - 1]._id }),
+      ...(hasPrev && { previous_cursor: r[0]._id })
     }
   }
 
   @Get('/:user_id')
-  @Summary('view a users details')
   async viewUserDetails (@Req() req: Req, @Required() @PathParams('user_id') userId: string): Promise<IResponseDto<any>> {
     if (!ObjectId.isValid(userId)) throw new BadRequest('Invalid user id')
 
@@ -155,7 +165,6 @@ export class UserCtrl {
   }
 
   @Delete('/:user_id')
-  @Summary('Ban or Delete a user')
   async deleteUser (@Req() req: Req, @Required() @PathParams('user_id') userId: string): Promise<IResponseDto<any>> {
     if (!ObjectId.isValid(userId)) throw new BadRequest('Invalid user id')
     const ERR_MSG = 'Error occur while updating user, kindly confirm user ID and try again'
@@ -168,8 +177,8 @@ export class UserCtrl {
 
     if (result.ok !== 1) throw new BadRequest(ERR_MSG)
     if ((result.lastErrorObject != null) &&
-    'updatedExisting' in result.lastErrorObject &&
-    result.lastErrorObject.updatedExisting !== true) {
+      'updatedExisting' in result.lastErrorObject &&
+      result.lastErrorObject.updatedExisting !== true) {
       throw new BadRequest(ERR_MSG)
     }
 
@@ -181,7 +190,6 @@ export class UserCtrl {
   }
 
   @Get('/download-csv')
-  @Summary('download a CSV file of the users')
   async downloadCSVFile (@Req() req: Req, @Res() res: Res,
     @Required() @QueryParams() query: UserQueryParams): Promise<void> {
     const q = formatQry(query)

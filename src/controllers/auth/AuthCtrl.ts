@@ -12,7 +12,6 @@ import Joi from 'joi'
 import userQueueProcessor from '../../workers/UserQueue'
 import { IUserJob, IUserRequest, JobType } from '../../types'
 import { AuthService } from '../../services/user/AuthService'
-import { OpenApiJwtAuth } from '../../decorators/OpenApiJwtAuth'
 import dbo from '../../services/MongoService'
 import { RedisCache } from '../../utils/Cache'
 import { detach } from '../../utils/detach'
@@ -72,9 +71,7 @@ export class AuthCtrl {
 
   // Logout user
   @Post('/logout')
-  @OpenApiJwtAuth()
   @Authorize()
-  @Summary('Logout administrator')
   async logOutUser (@Req() req: IUserRequest): Promise<any> {
     if (req.headers === null || !('authorization' in req.headers)) {
       throw new Unauthorized('Unable to validate authorization key!')
@@ -86,9 +83,7 @@ export class AuthCtrl {
 
   // Update/Change password
   @Post('/update-password')
-  @Authorize() // @Authorize('jwt')
-  @OpenApiJwtAuth()
-  @Summary('Update/change password')
+  @Authorize()
   async changePassword (@Req() req: IUserRequest, @BodyParams() body: UpdatePassword): Promise<any> {
     const schema = Joi.object({
       current_password: Joi.string().label('Current password')
@@ -125,7 +120,6 @@ export class AuthCtrl {
 
   // Reset Password
   @Post('/reset/:reset_token')
-  @Summary('reset password')
   async resetPassword (
     @Required() @PathParams('reset_token') resetToken: string,
       @BodyParams() body: ResetPassword): Promise<any> {
@@ -162,7 +156,6 @@ export class AuthCtrl {
 
   // Generate password reset link
   @Post('/reset-password')
-  @Summary('Generate password reset link')
   async generateResetLink (@Required() @BodyParams('email') email: string): Promise<any> {
     email = email.trim().split(' ')[0]
 
@@ -203,7 +196,6 @@ export class AuthCtrl {
 
   // Validate reset password token
   @Get('/confirm-reset-token')
-  @Summary('Confirm reset password token')
   async validateResetPasswordToken (@QueryParams('reset_hash') resetHash: string): Promise<any> {
     const currentTime = Math.floor(Date.now() / 1000)
     const errMsg = 'Invalid or expire reset details'

@@ -1,5 +1,5 @@
 import { BodyParams, Configuration, Controller, PathParams, Post } from '@tsed/common'
-import { Description, Get, Name, Required, Returns, Summary } from '@tsed/schema'
+import { Get, Name, Required } from '@tsed/schema'
 import jwt, { JwtPayload } from 'jsonwebtoken'
 import { Authorize } from '@tsed/passport'
 import Queue, { JobOptions } from 'bull'
@@ -13,7 +13,6 @@ import { detach } from '../../utils/detach'
 import { BadRequest, NotFound } from '@tsed/exceptions'
 import { AuthService } from '../../services/user/AuthService'
 import { IUserJob, JobType } from '../../types'
-import { OpenApiJwtAuth } from '../../decorators/OpenApiJwtAuth'
 
 export class AcceptInvite {
   @Required()
@@ -42,9 +41,7 @@ export class AdminCtrl {
   }
 
   @Post('/')
-  @OpenApiJwtAuth()
   @Authorize()
-  @Summary('Endpoint to onboard new administrator')
   async inviteUser (@Required() @BodyParams('email') email: string): Promise<any> {
     const configKeys = this.config.get('configKeys')
 
@@ -80,8 +77,6 @@ export class AdminCtrl {
   }
 
   @Get('/validate-link/:invite_token')
-  @Summary('Endpoint to validate link')
-  @Description('Validate invite link')
   async validateLink (@Required() @PathParams('invite_token') link: string): Promise<any> {
     const configKeys = this.config.get('configKeys')
     jwt.verify(link, configKeys.AES_KEY) as JwtPayload
@@ -94,8 +89,6 @@ export class AdminCtrl {
   }
 
   @Post('/accept-invite/:invite_token')
-  @(Returns(400, NotFound).Description('Admin not found'))
-  @Summary('Endpoint to accept invites')
   async acceptInvite (
     @Required() @PathParams('invite_token') inviteLink: string,
       @BodyParams() payload: AcceptInvite): Promise<IResponseDto<any>> {

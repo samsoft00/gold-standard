@@ -1,7 +1,5 @@
 import { Controller, Get, Res } from '@tsed/common'
-import { Hidden } from '@tsed/swagger'
 
-@Hidden()
 @Controller({ path: '/' })
 export class HomeCtrl {
   @Get('/')

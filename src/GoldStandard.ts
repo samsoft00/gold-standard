@@ -2,7 +2,6 @@ import 'dotenv/config'
 import { PlatformAcceptMimesMiddleware, PlatformApplication } from '@tsed/common'
 import { Configuration, Inject } from '@tsed/di'
 import '@tsed/platform-express'
-import '@tsed/swagger'
 import Path from 'path'
 import cors from 'cors'
 import morgan from 'morgan'
@@ -11,7 +10,6 @@ import express from 'express'
 import compress from 'compression'
 
 import './errors/ErrorHandler'
-import { specOS3 } from './utils/specOS3'
 import { HomeCtrl } from './controllers/HomeCtrl'
 
 const rootDir = Path.resolve(__dirname)
@@ -29,7 +27,6 @@ const REFRESH_EXP = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 1 // 7 days
     `${rootDir}/protocols/**/*.ts`
   ],
   exclude: ['**/*.spec.ts'],
-  swagger: [{ path: '/api/docs', specVersion: '3.0.1', spec: specOS3 }],
   acceptMimes: ['application/json'],
   auth: {
     secret: process.env.ACCESS_TOKEN_SECRET,

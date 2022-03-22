@@ -188,7 +188,7 @@ export class UserCtrl {
     }
   }
 
-  @Get('/download-csv')
+  @Get('/download/export-csv')
   async downloadCSVFile (@Req() req: Req, @Res() res: Res,
     @Required() @QueryParams() query: UserQueryParams): Promise<void> {
     const q = formatQry(query)

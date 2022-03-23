@@ -109,6 +109,7 @@ export class UserCtrl {
     }
 
     const r = await dbo.db().collection('users').find(q, { sort, limit }).toArray()
+    const totalUsers = await dbo.db().collection('users').count()
 
     if (qryPrev) r.reverse()
 
@@ -141,8 +142,11 @@ export class UserCtrl {
       statusCode: 200,
       message: 'successful',
       data,
-      ...(hasNext && { next_cursor: r[r.length - 1]._id }),
-      ...(hasPrev && { previous_cursor: r[0]._id })
+      pagination: {
+        total_users: totalUsers,
+        ...(hasNext && { next_cursor: r[r.length - 1]._id }),
+        ...(hasPrev && { previous_cursor: r[0]._id })
+      }
     }
   }
 

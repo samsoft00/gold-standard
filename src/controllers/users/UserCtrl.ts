@@ -63,10 +63,12 @@ const formatQry = (query: UserQueryParams): any => {
   query.year_join = parseInt(query.month_join ?? '')
   query.name = decodeURIComponent(query.name ?? '')
 
+  const userStatus = query.user_status === 'active' ?? false
+
   return {
     // isDeleted: { $exists: false },
     // ...(query.name !== '' && { name: { $regex: /query.name/, $options: 'i' } }),
-    ...(['active', 'inactive'].includes(query.user_status) && { active: { $exists: true, $eq: query.user_status } }),
+    ...(['active', 'inactive'].includes(query.user_status) && { active: { $exists: true, $eq: userStatus } }),
     ...(query.month_join !== '' && { createdAt: { $month: dayjs().month(months[query.month_join]).toDate() } }),
     ...(!isNaN(query.year_join) && { createdAt: { $year: dayjs().year(query.year_join).toDate() } })
 
@@ -123,7 +125,7 @@ export class UserCtrl {
       hasPrev = check !== null
     }
 
-    console.log(r.length, query, q)
+    // console.log(r.length, query, q)
 
     const data = r.map(l => {
       return {

@@ -1,6 +1,6 @@
 import { Delete, Name, Required } from '@tsed/schema'
 import { Get, PathParams, QueryParams, Req, Res } from '@tsed/common'
-import { Configuration, Controller } from '@tsed/di'
+import { Configuration, Controller, Inject } from '@tsed/di'
 import { Transform, pipeline } from 'stream'
 import { Authorize } from '@tsed/passport'
 import { ObjectId, Sort } from 'mongodb'
@@ -12,6 +12,8 @@ import { UserService } from '../../services/user/UserService'
 import { IResponseDto } from '../../types/interfaces/IResponseDto'
 import { BadRequest, NotFound } from '@tsed/exceptions'
 import dbo from '../../services/MongoService'
+import { UserModel } from '../../models/users/User'
+import { MongooseModel } from '@tsed/mongoose'
 
 const asyncPipeline = promisify(pipeline)
 
@@ -19,7 +21,7 @@ export interface UserQueryParams {
   name?: string
   limit: number
   user_status: string
-  year_join?: number
+  year_join?: string
   month_join?: string
   previous_cursor?: string
   next_cursor?: string
@@ -60,18 +62,27 @@ const months: { [key: string]: number } = {
 
 const formatQry = (query: UserQueryParams): any => {
   query.month_join = query.month_join ?? ''
-  query.year_join = parseInt(query.month_join ?? '')
   query.name = decodeURIComponent(query.name ?? '')
+  query.month_join = query.month_join.toLowerCase()
 
   const userStatus = query.user_status === 'active' ?? false
+  const monthJoined = months[query.month_join] >= 0 ?? false
 
   return {
-    // isDeleted: { $exists: false },
-    // ...(query.name !== '' && { name: { $regex: /query.name/, $options: 'i' } }),
+    ...(query.name !== '' && { name: { $regex: query.name, $options: 'i' } }),
     ...(['active', 'inactive'].includes(query.user_status) && { active: { $exists: true, $eq: userStatus } }),
-    ...(query.month_join !== '' && { createdAt: { $month: dayjs().month(months[query.month_join]).toDate() } }),
-    ...(!isNaN(query.year_join) && { createdAt: { $year: dayjs().year(query.year_join).toDate() } })
-
+    ...(monthJoined && {
+      createdAt: {
+        $gte: dayjs().month(months[query.month_join]).startOf('month').toDate(),
+        $lt: dayjs().month(months[query.month_join]).endOf('month').toDate()
+      }
+    }),
+    ...((typeof query.year_join !== 'undefined' && query.year_join !== '') && {
+      createdAt: {
+        $gte: dayjs().year(parseInt(query.year_join)).startOf('year').toDate(),
+        $lt: dayjs().year(parseInt(query.year_join)).endOf('year').toDate()
+      }
+    })
   }
 }
 
@@ -79,6 +90,8 @@ const formatQry = (query: UserQueryParams): any => {
 @Controller({ path: '/user' })
 @Name('Users')
 export class UserCtrl {
+  @Inject(UserModel)
+  private readonly model: MongooseModel<UserModel>
   /**
      * Search user by
      * Manage users
@@ -111,7 +124,7 @@ export class UserCtrl {
     }
 
     const r = await dbo.db().collection('users').find(q, { sort, limit }).toArray()
-    const totalUsers = await dbo.db().collection('users').count()
+    const totalUsers = await dbo.db().collection('users').countDocuments(q)
 
     if (qryPrev) r.reverse()
 
@@ -124,8 +137,6 @@ export class UserCtrl {
       check = await dbo.db().collection('users').findOne(q)
       hasPrev = check !== null
     }
-
-    // console.log(r.length, query, q)
 
     const data = r.map(l => {
       return {
@@ -156,16 +167,27 @@ export class UserCtrl {
   async viewUserDetails (@Req() req: Req, @Required() @PathParams('user_id') userId: string): Promise<IResponseDto<any>> {
     if (!ObjectId.isValid(userId)) throw new BadRequest('Invalid user id')
 
-    const user = await dbo.db().collection('users').findOne({ _id: new dbo.Id(userId) })
-    if (user === null) throw new NotFound(`User ID: ${userId} not found`)
+    const findQuery = { $match: { _id: { $eq: new ObjectId(userId) } } }
 
-    delete user.password
-    delete user.__v
+    const user = await dbo.db().collection('users').aggregate([
+      { $match: findQuery },
+      {
+        $lookup: {
+          from: 'nextofkins',
+          localField: 'nextOfKin',
+          foreignField: '_id',
+          as: 'next_of_kin'
+        }
+      },
+      { $unwind: '$next_of_kin' }
+    ]).toArray()
+
+    if (user.length === 0) throw new NotFound(`User ID: ${userId} not found`)
 
     return {
       statusCode: 200,
       message: 'successful',
-      data: user
+      data: user[0]
     }
   }
 

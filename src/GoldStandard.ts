@@ -23,9 +23,7 @@ const REFRESH_EXP = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 1 // 7 days
     '/': [HomeCtrl],
     '/api/v1': [`${rootDir}/controllers/**/*.ts`]
   },
-  componentsScan: [
-    `${rootDir}/protocols/**/*.ts`
-  ],
+  componentsScan: [`${rootDir}/protocols/**/*.ts`],
   exclude: ['**/*.spec.ts'],
   acceptMimes: ['application/json'],
   auth: {

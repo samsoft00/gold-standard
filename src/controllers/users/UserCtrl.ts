@@ -1,6 +1,6 @@
 import { Delete, Name, Required } from '@tsed/schema'
 import { Get, PathParams, QueryParams, Req, Res } from '@tsed/common'
-import { Configuration, Controller, Inject } from '@tsed/di'
+import { Configuration, Controller } from '@tsed/di'
 import { Transform, pipeline } from 'stream'
 import { Authorize } from '@tsed/passport'
 import { ObjectId, Sort } from 'mongodb'
@@ -12,8 +12,6 @@ import { UserService } from '../../services/user/UserService'
 import { IResponseDto } from '../../types/interfaces/IResponseDto'
 import { BadRequest, NotFound } from '@tsed/exceptions'
 import dbo from '../../services/MongoService'
-import { UserModel } from '../../models/users/User'
-import { MongooseModel } from '@tsed/mongoose'
 
 const asyncPipeline = promisify(pipeline)
 
@@ -90,8 +88,6 @@ const formatQry = (query: UserQueryParams): any => {
 @Controller({ path: '/user' })
 @Name('Users')
 export class UserCtrl {
-  @Inject(UserModel)
-  private readonly model: MongooseModel<UserModel>
   /**
      * Search user by
      * Manage users

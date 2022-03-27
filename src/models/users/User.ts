@@ -1,9 +1,6 @@
-import { Indexed, Model, ObjectID, Unique } from '@tsed/mongoose'
 import { Property, Required } from '@tsed/schema'
 
-@Model({ collection: 'users' })
 export class UserModel {
-  @ObjectID('id')
   _id: string
 
   @Property()
@@ -11,7 +8,6 @@ export class UserModel {
 
   @Property()
   @Required()
-  @Unique()
   email: string
 
   phoneNumber: number
@@ -21,9 +17,7 @@ export class UserModel {
   password: string
   type: string
 
-  @Indexed()
-  @ObjectID('nextOfKin')
-  nextOfKin: string | ObjectID | null
+  nextOfKin: string | null
 
   bvn: number | null
   bvn_verified: boolean

@@ -85,9 +85,12 @@ const formatQry = (query: UserQueryParams): any => {
   }
 
   if (yearJoined && typeof query.year_join !== 'undefined') {
+    const gte = qryByDate.$gte.year(parseInt(query.year_join))
+    const lt = qryByDate.$lt.year(parseInt(query.year_join))
+
     Object.assign(qryByDate, {
-      $gte: qryByDate.$gte.year(parseInt(query.year_join)),
-      $lt: qryByDate.$lt.year(parseInt(query.year_join))
+      $gte: monthJoined ? gte : gte.startOf('year'),
+      $lt: monthJoined ? lt : lt.endOf('year')
     })
   }
 

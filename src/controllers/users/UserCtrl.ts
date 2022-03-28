@@ -65,23 +65,42 @@ const formatQry = (query: UserQueryParams): any => {
 
   const userStatus = query.user_status === 'active' ?? false
   const monthJoined = months[query.month_join] >= 0 ?? false
+  const yearJoined = typeof query.year_join !== 'undefined' && query.year_join !== ''
 
-  return {
+  const response = {
     ...(query.name !== '' && { name: { $regex: query.name, $options: 'i' } }),
-    ...(['active', 'inactive'].includes(query.user_status) && { active: { $exists: true, $eq: userStatus } }),
-    ...(monthJoined && {
+    ...(['active', 'inactive'].includes(query.user_status) && { active: { $exists: true, $eq: userStatus } })
+  }
+
+  const qryByDate = {
+    $gte: dayjs(),
+    $lt: dayjs()
+  }
+
+  if (monthJoined) {
+    Object.assign(qryByDate, {
+      $gte: qryByDate.$gte.month(months[query.month_join]).startOf('month'),
+      $lt: qryByDate.$lt.month(months[query.month_join]).endOf('month')
+    })
+  }
+
+  if (yearJoined && typeof query.year_join !== 'undefined') {
+    Object.assign(qryByDate, {
+      $gte: qryByDate.$gte.year(parseInt(query.year_join)),
+      $lt: qryByDate.$lt.year(parseInt(query.year_join))
+    })
+  }
+
+  if (monthJoined || yearJoined) {
+    Object.assign(response, {
       createdAt: {
-        $gte: dayjs().month(months[query.month_join]).startOf('month').toDate(),
-        $lt: dayjs().month(months[query.month_join]).endOf('month').toDate()
-      }
-    }),
-    ...((typeof query.year_join !== 'undefined' && query.year_join !== '') && {
-      createdAt: {
-        $gte: dayjs().year(parseInt(query.year_join)).startOf('year').toDate(),
-        $lt: dayjs().year(parseInt(query.year_join)).endOf('year').toDate()
+        $gte: qryByDate.$gte.toDate(),
+        $lt: qryByDate.$lt.toDate()
       }
     })
   }
+
+  return response
 }
 
 @Authorize()

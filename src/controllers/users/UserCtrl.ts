@@ -244,7 +244,7 @@ export class UserCtrl {
       res.setHeader('Content-Type', 'text/csv')
       res.setHeader(
         'Content-Disposition',
-        `attachment; filename="gsc-${filePrx.replace(/[^A-Za-z0-9]/g, '')}-original.csv"`)
+        `attachment; filename="user-${filePrx.replace(/[^A-Za-z0-9]/g, '')}-original.csv"`)
     }
 
     const csvStringify = stringify({

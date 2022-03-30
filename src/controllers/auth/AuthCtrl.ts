@@ -15,6 +15,19 @@ import { AuthService } from '../../services/user/AuthService'
 import dbo from '../../services/MongoService'
 import { RedisCache } from '../../utils/Cache'
 import { detach } from '../../utils/detach'
+import { ObjectId } from 'mongodb'
+
+export interface IAuthUser {
+  _id: ObjectId
+  email: string
+  is_disabled: boolean
+  password?: string
+  reg_date: Date
+  updated_datetime: Date
+  reset_token: string
+  reset_expires: number
+  last_login_attempt: number
+}
 
 class ResetPassword {
   @Required()

@@ -116,7 +116,7 @@ export class SavingsCtrl {
     const r = await savingModel.aggregate<ISavings>([
       { $match: q },
       { $lookup: { from: 'users', localField: 'user', foreignField: '_id', as: 'user' } },
-      { $unwind: '$user' },
+      { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
       {
         $project: {
           _id: 1,
@@ -216,7 +216,7 @@ export class SavingsCtrl {
     const cursor = await dbo.db().collection('savings').aggregate<ISavings>([
       { $match: q },
       { $lookup: { from: 'users', localField: 'user', foreignField: '_id', as: 'user' } },
-      { $unwind: '$user' }
+      { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } }
     ]).sort(sort)
 
     await asyncPipeline(cursor.stream(), new Transform({

@@ -188,7 +188,7 @@ export class UserCtrl {
     const findQuery = { $match: { _id: { $eq: new ObjectId(userId) } } }
 
     const user = await dbo.db().collection('users').aggregate([
-      { $match: findQuery },
+      findQuery,
       {
         $lookup: {
           from: 'nextofkins',
@@ -197,7 +197,7 @@ export class UserCtrl {
           as: 'next_of_kin'
         }
       },
-      { $unwind: '$next_of_kin' }
+      { $unwind: { path: '$next_of_kin', preserveNullAndEmptyArrays: true } }
     ]).toArray()
 
     if (user.length === 0) throw new NotFound(`User ID: ${userId} not found`)

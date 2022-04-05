@@ -101,7 +101,7 @@ export class TransctionCtrl {
           as: 'user'
         }
       },
-      { $unwind: '$user' },
+      { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
       {
         $project: {
           _id: 1,

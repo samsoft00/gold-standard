@@ -38,7 +38,8 @@ const REFRESH_EXP = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 1 // 7 days
     sendgridApikey: process.env.SENDGRID_API_KEY
   },
   configKeys: {
-    AES_KEY: process.env.AES_KEY
+    AES_KEY: process.env.AES_KEY,
+    PAYSTACK_SECRET_KEY: process.env.PAYSTACK_SECRET_KEY
   }
 })
 export class GoldStandard {

@@ -124,6 +124,7 @@ export class UserCtrl {
   @Get('/')
   async fetchAllUsers (@Req() req: Req,
     @Required() @QueryParams() query: UserQueryParams): Promise<any> {
+    const userModel = dbo.db().collection('users')
     const q = formatQry(query)
 
     const sort: Sort = { _id: -1, createdAt: 1 }
@@ -141,18 +142,19 @@ export class UserCtrl {
       q._id = { $lt: new dbo.Id(query.next_cursor) }
     }
 
-    const r = await dbo.db().collection('users').find(q, { sort, limit }).toArray()
-    const totalUsers = await dbo.db().collection('users').countDocuments(q)
+    console.log(q, sort, limit)
+    const totalUsers = await userModel.countDocuments()
+    const r = await userModel.find(q, { sort, limit }).toArray()
 
     if (qryPrev) r.reverse()
 
     if (r.length > 0) {
       q._id = { $lt: new dbo.Id(r[r.length - 1]._id) }
-      let check = await dbo.db().collection('users').findOne(q)
+      let check = await userModel.findOne(q)
       hasNext = check !== null
 
       q._id = { $gt: new dbo.Id(r[0]._id) }
-      check = await dbo.db().collection('users').findOne(q)
+      check = await userModel.findOne(q)
       hasPrev = check !== null
     }
 

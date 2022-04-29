@@ -39,7 +39,8 @@ const REFRESH_EXP = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 1 // 7 days
   },
   configKeys: {
     AES_KEY: process.env.AES_KEY,
-    PAYSTACK_SECRET_KEY: process.env.PAYSTACK_SECRET_KEY
+    PAYSTACK_SECRET_KEY: process.env.PAYSTACK_SECRET_KEY,
+    PAYSTACK_PUBLIC_KEY: process.env.PAYSTACK_PUBLIC_KEY
   }
 })
 export class GoldStandard {

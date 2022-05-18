@@ -4,8 +4,9 @@ export enum JobType {
   SEND_INVITE = 'invite'
 }
 
-interface IQueue {
+export interface IQueue {
   jobName: string
+  email: string
 }
 
 export interface IUserJob extends IQueue {

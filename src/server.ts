@@ -8,6 +8,8 @@ async function server (): Promise<void> {
     Object.assign($log, { name: 'GoldStandard', level: 'info' })
     $log.debug('Start server...')
 
+    await db.connect()
+
     const platform = await PlatformExpress.bootstrap(GoldStandard, {
       // extra settings
       port: process.env.PORT ?? 3116,
@@ -30,7 +32,6 @@ async function server (): Promise<void> {
       }, exitAfter * 1000)
     }
 
-    await db.connect()
     await platform.listen()
 
     $log.debug('Server initialized')

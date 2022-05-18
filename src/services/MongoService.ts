@@ -1,3 +1,4 @@
+import { Configuration, Injectable, ProviderScope, ProviderType } from '@tsed/common'
 import 'dotenv/config'
 import { Db, MongoClient, ObjectId } from 'mongodb'
 import { detach } from '../utils/detach'
@@ -23,6 +24,40 @@ export default {
     db = client.db(process.env.DB_NAME)
   },
   close: async () => {
+    return detach(client.close())
+  }
+}
+
+@Injectable({
+  type: ProviderType.SERVICE,
+  scope: ProviderScope.SINGLETON
+})
+export class MongoService {
+  private db: Db
+  private client: MongoClient
+
+  constructor (@Configuration() readonly config: Configuration) {}
+
+  public getDb (): Db {
+    return this.db
+  }
+
+  getClient (): MongoClient {
+    return this.client
+  }
+
+  async connect (): Promise<void> {
+    const configKey = this.config.get<{[key: string]: string}>('database')
+
+    this.client = new MongoClient(configKey.DB_URL, {
+      maxPoolSize: Number(configKey.MAX_POOL_SIZE)
+    })
+
+    await client.connect()
+    this.db = client.db(configKey.DB_NAME)
+  }
+
+  async close (): Promise<void> {
     return detach(client.close())
   }
 }

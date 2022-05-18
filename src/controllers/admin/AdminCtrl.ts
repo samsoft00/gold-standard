@@ -1,18 +1,17 @@
-import { BodyParams, Configuration, Controller, PathParams, Post } from '@tsed/common'
-import { Get, Name, Required } from '@tsed/schema'
+import { BodyParams, Configuration, Controller, Get, PathParams, Post } from '@tsed/common'
+import { Required } from '@tsed/schema'
 import jwt, { JwtPayload } from 'jsonwebtoken'
 import { Authorize } from '@tsed/passport'
-import Queue, { JobOptions } from 'bull'
 import dayjs from 'dayjs'
 import Joi from 'joi'
 
 import dbo from '../../services/MongoService'
-import userQueueProcessor from '../../workers/UserQueue'
 import { IResponseDto } from '../../types/interfaces/IResponseDto'
 import { detach } from '../../utils/detach'
 import { BadRequest, NotFound } from '@tsed/exceptions'
 import { AuthService } from '../../services/user/AuthService'
 import { IUserJob, JobType } from '../../types'
+import { UserQueue } from '../../workers/UserQueue'
 
 export class AcceptInvite {
   @Required()
@@ -21,27 +20,16 @@ export class AcceptInvite {
   @Required()
   confirm_password: string
 }
-
 @Controller({ path: '/admin' })
-@Name('Admin')
 export class AdminCtrl {
-  queue: Queue.Queue<IUserJob>
-  queueOptn: JobOptions
-
-  constructor (
+  constructor (private readonly userQueue: UserQueue<IUserJob>,
     private readonly authService: AuthService,
     @Configuration() readonly config: Configuration) {
-    this.queue = new Queue('UserQueue', config.get<string>('redisUrl', process.env.REDIS_URL))
-    this.queueOptn = {
-      attempts: 3,
-      backoff: { type: 'exponential', delay: 5000 }
-    }
-
-    detach(this.queue.process(3, userQueueProcessor))
+    this.userQueue.init('userQueue')
   }
 
   @Post('/')
-  @Authorize()
+  // @Authorize()
   async inviteUser (@Required() @BodyParams('email') email: string): Promise<any> {
     const configKeys = this.config.get('configKeys')
 
@@ -57,16 +45,10 @@ export class AdminCtrl {
 
     const link = jwt.sign({ id: result.insertedId.toString() }, configKeys.AES_KEY, { expiresIn: '3h' })
 
-    detach(this.queue.add({
+    detach(this.userQueue.add({
       jobName: JobType.SEND_INVITE,
       inviteLink: link,
       email
-    }, {
-      attempts: 3,
-      backoff: {
-        type: 'exponential',
-        delay: 5000
-      }
     }))
 
     return {
@@ -115,7 +97,7 @@ export class AdminCtrl {
     const decoded = jwt.verify(inviteLink, configKeys.AES_KEY) as JwtPayload
 
     const admin = await dbo.db().collection('admins').findOne({ _id: new dbo.Id(decoded.id) })
-    if (admin === null) throw new NotFound('Admin not found')
+    if (admin === null) throw new NotFound('Account not found')
 
     const hashPassword = await this.authService.hashPassword(payload.password)
     await dbo.db().collection('admins').updateOne(

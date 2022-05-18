@@ -1,4 +1,4 @@
-import { Injectable } from '@tsed/di'
+import { Injectable } from '@tsed/common'
 import { FindOptions } from 'mongodb'
 
 import dbo from '../MongoService'

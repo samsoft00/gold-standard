@@ -32,23 +32,40 @@ const REFRESH_EXP = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 1 // 7 days
     signOptions: { expiresIn: PASSWORD_EXP, refreshExpIn: REFRESH_EXP },
     resetPasswordExp: PASSWORD_RESET_EXP
   },
+  emailTemplate: {
+    ADMIN_INVITE: 'd-e426cc7e110f4625ac616a2a8fc2ad90'
+  },
   email: {
     name: 'Gold Standard',
     sender: process.env.DEFAULT_EMAIL,
     sendgridApikey: process.env.SENDGRID_API_KEY
   },
+  twilio: {
+    accountSid: process.env.TWILIO_ACCOUNT_SID,
+    authToken: process.env.TWILIO_AUTH_TOKEN,
+    phoneNumber: process.env.TWILIO_PHONE_NUMBER
+  },
   configKeys: {
     AES_KEY: process.env.AES_KEY,
     PAYSTACK_SECRET_KEY: process.env.PAYSTACK_SECRET_KEY,
     PAYSTACK_PUBLIC_KEY: process.env.PAYSTACK_PUBLIC_KEY
+  },
+  database: {
+    DB_URL: process.env.DB_URL,
+    DB_NAME: process.env.DB_NAME,
+    MAX_POOL_SIZE: process.env.MAX_POOL_SIZE
   }
 })
 export class GoldStandard {
   @Inject()
   app: PlatformApplication
 
+  // @Inject()
+  // mongoService: MongoService
+
   private $beforeRoutesInit (): void {
     this.middleware()
+    // detach(this.mongoService.connect())
   }
 
   private middleware (): void {

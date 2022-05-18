@@ -43,7 +43,7 @@ interface UserList {
   createdAt: Date
 }
 
-const months: { [key: string]: number } = {
+export const months: { [key: string]: number } = {
   january: 0,
   february: 1,
   march: 2,
@@ -142,7 +142,7 @@ export class UserCtrl {
       q._id = { $lt: new dbo.Id(query.next_cursor) }
     }
 
-    console.log(q, sort, limit)
+    // console.log(q, sort, limit)
     const totalUsers = await userModel.countDocuments()
     const r = await userModel.find(q, { sort, limit }).toArray()
 

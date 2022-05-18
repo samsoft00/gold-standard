@@ -9,7 +9,6 @@ import dayjs from 'dayjs'
 import { v4 } from 'uuid'
 import Joi from 'joi'
 
-import userQueueProcessor from '../../workers/UserQueue'
 import { IUserJob, IUserRequest, JobType } from '../../types'
 import { AuthService } from '../../services/user/AuthService'
 import dbo from '../../services/MongoService'
@@ -70,7 +69,7 @@ export class AuthCtrl {
       backoff: { type: 'exponential', delay: 5000 }
     }
 
-    detach(this.queue.process(3, userQueueProcessor))
+    // detach(this.queue.process(3, userQueueProcessor))
   }
 
   @Post('/login')

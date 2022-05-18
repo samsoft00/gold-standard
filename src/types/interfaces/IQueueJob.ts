@@ -6,7 +6,13 @@ export enum JobType {
 
 export interface IQueue {
   jobName: string
+}
+
+export interface IEmailJob extends IQueue{
+  subject: string
+  templateId: string
   email: string
+  [key: string]: string
 }
 
 export interface IUserJob extends IQueue {

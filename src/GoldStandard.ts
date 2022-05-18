@@ -33,11 +33,11 @@ const REFRESH_EXP = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 1 // 7 days
     resetPasswordExp: PASSWORD_RESET_EXP
   },
   emailTemplate: {
-    ADMIN_INVITE: 'd-e426cc7e110f4625ac616a2a8fc2ad90'
+    ADMIN_INVITE: 'd-5d0e5d575efd4c93a397937df28cb3c7'
   },
-  email: {
-    name: 'Gold Standard',
-    sender: process.env.DEFAULT_EMAIL,
+  mail: {
+    name: 'GS Cooperative',
+    email: process.env.DEFAULT_EMAIL,
     sendgridApikey: process.env.SENDGRID_API_KEY
   },
   twilio: {

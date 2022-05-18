@@ -1,7 +1,7 @@
-import { BodyParams, Configuration, Controller, Get, PathParams, Post } from '@tsed/common'
+import { BodyParams, Get, PathParams, Post } from '@tsed/common'
+import { Configuration, Controller } from '@tsed/di'
 import { Required } from '@tsed/schema'
 import jwt, { JwtPayload } from 'jsonwebtoken'
-import { Authorize } from '@tsed/passport'
 import dayjs from 'dayjs'
 import Joi from 'joi'
 
@@ -10,9 +10,11 @@ import { IResponseDto } from '../../types/interfaces/IResponseDto'
 import { detach } from '../../utils/detach'
 import { BadRequest, NotFound } from '@tsed/exceptions'
 import { AuthService } from '../../services/user/AuthService'
-import { IUserJob, JobType } from '../../types'
-import { UserQueue } from '../../workers/UserQueue'
+import { JobType } from '../../types'
+import { MailQueue } from '../../workers/MailQueue'
+import { IEmailJob } from '../../types/interfaces/IQueueJob'
 
+const INVITE_TEMPLATE = process.env.INVITE_TEMPLATE
 export class AcceptInvite {
   @Required()
   password: string
@@ -20,15 +22,16 @@ export class AcceptInvite {
   @Required()
   confirm_password: string
 }
+
 @Controller({ path: '/admin' })
 export class AdminCtrl {
-  constructor (private readonly userQueue: UserQueue<IUserJob>,
+  constructor (private readonly emailQueue: MailQueue<IEmailJob>,
     private readonly authService: AuthService,
     @Configuration() readonly config: Configuration) {
-    this.userQueue.init('userQueue')
+    this.emailQueue.init('userQueue')
   }
 
-  @Post('/')
+  @Post('/invite-user')
   // @Authorize()
   async inviteUser (@Required() @BodyParams('email') email: string): Promise<any> {
     const configKeys = this.config.get('configKeys')
@@ -45,8 +48,10 @@ export class AdminCtrl {
 
     const link = jwt.sign({ id: result.insertedId.toString() }, configKeys.AES_KEY, { expiresIn: '3h' })
 
-    detach(this.userQueue.add({
+    detach(this.emailQueue.add({
       jobName: JobType.SEND_INVITE,
+      subject: 'You\'re invited',
+      templateId: INVITE_TEMPLATE as string,
       inviteLink: link,
       email
     }))

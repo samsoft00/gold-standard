@@ -195,7 +195,7 @@ export class LoanCtrl {
           from: 'users',
           localField: 'userId',
           foreignField: '_id',
-          pipeline: [{ $project: { _id: 1, name: 1 } }],
+          pipeline: [{ $project: { _id: 1, name: 1, profileImageUrl: 1 } }],
           as: 'user'
         }
       },

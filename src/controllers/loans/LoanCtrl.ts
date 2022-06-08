@@ -1,4 +1,4 @@
-import { Get, QueryParams } from '@tsed/common'
+import { Get, PathParams, QueryParams } from '@tsed/common'
 import { Configuration, Controller } from '@tsed/di'
 import { Authorize } from '@tsed/passport'
 import dayjs from 'dayjs'
@@ -16,10 +16,6 @@ enum LoanStatus {
   Declined = 'declined',
 }
 
-interface ShelterLoanInfo{}
-
-interface ScholarLoanInfo{}
-
 interface ILoan extends Document{
   _id: string
   userId: string | ObjectId
@@ -27,7 +23,7 @@ interface ILoan extends Document{
   loanPackage: string | ObjectId
   amount: number
   reason: string
-  additionalInfo: ShelterLoanInfo | ScholarLoanInfo | null
+  additionalInfo: any
 }
 
 interface ILoanTypes extends Document {
@@ -48,7 +44,6 @@ interface ILoanSortBy {
 const formatLoanQuery = (query: ILoanSortBy): any => {
   query.month_joined = query.month_joined?.toLowerCase() ?? ''
 
-  const amount = new Decimal(query.amount ?? '-')
   const isMonthJoined = months[query.month_joined] >= 0 ?? false
 
   return {
@@ -58,7 +53,7 @@ const formatLoanQuery = (query: ILoanSortBy): any => {
         $lt: dayjs().month(months[query.month_joined]).endOf('month')
       }
     }),
-    ...(!amount.isNaN() && { amount: { $gte: amount.toFixed(2) } }),
+    ...(query.amount !== undefined && { amount: { $gte: new Decimal(query.amount).toNumber() } }),
     ...(query.loan_status in LoanStatus && { status: query.loan_status })
   }
 }
@@ -97,21 +92,32 @@ export class LoanCtrl {
     } else if (qryNext) {
       q._id = { $lt: new dbMgr.Id(query.next_cursor) }
     }
-
+    console.log(q, limit, sort)
     const totalLoan = await this.Loan.countDocuments()
 
     const loanList = await this.Loan.aggregate([
-      { $match: q, limit, sort },
+      { $match: q },
+      {
+        $lookup: {
+          from: 'loanpackages',
+          localField: 'loanPackage',
+          foreignField: '_id',
+          pipeline: [{ $project: { _id: 1, title: 1 } }],
+          as: 'package'
+        }
+      },
       {
         $lookup: {
           from: 'users',
           localField: 'userId',
           foreignField: '_id',
+          pipeline: [{ $project: { _id: 1, name: 1 } }],
           as: 'user'
         }
       },
-      { $unwind: { path: '$users', preserveNullAndEmptyArrays: true } }
-    ]).toArray()
+      { $unwind: { path: '$package', preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } }
+    ]).limit(limit).sort(sort).toArray()
 
     if (qryPrev) loanList.reverse()
 
@@ -124,7 +130,7 @@ export class LoanCtrl {
       check = await this.Loan.findOne(q)
       hasPrev = check !== null
     }
-
+    // console.log(loanList, totalLoan)
     return new PaginateResponse(loanList, totalLoan, hasNext, hasPrev)
   }
 
@@ -136,6 +142,80 @@ export class LoanCtrl {
       statusCode: 200,
       message: 'Success',
       data: loanTypes
+    }
+  }
+
+  @Get('/:loanId')
+  async getLoanById (@PathParams('loanId') loanId: string): Promise<IResponseDto<any>> {
+    const loan = await this.Loan.aggregate([
+      { $match: { _id: new dbMgr.Id(loanId) } },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          pipeline: [{ $project: { _id: 1, name: 1 } }],
+          as: 'user'
+        }
+      },
+      {
+        $lookup: {
+          from: 'loanpackages',
+          localField: 'loanPackage',
+          foreignField: '_id',
+          pipeline: [{ $project: { _id: 1, title: 1 } }],
+          as: 'package'
+        }
+      },
+      {
+        $lookup: {
+          from: 'loanrepayments',
+          localField: '_id',
+          foreignField: 'loanId',
+          as: 'repayments'
+        }
+      },
+      { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: '$package', preserveNullAndEmptyArrays: true } }
+    ]).toArray()
+
+    return {
+      statusCode: 200,
+      message: 'Success',
+      data: loan[0]
+    }
+  }
+
+  @Get('/:userId/user')
+  async getLoansByUserId (@PathParams('userId') userId: string): Promise<IResponseDto<any>> {
+    const loans = await this.Loan.aggregate([
+      { $match: { userId: new dbMgr.Id(userId) } },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          pipeline: [{ $project: { _id: 1, name: 1 } }],
+          as: 'user'
+        }
+      },
+      {
+        $lookup: {
+          from: 'loanpackages',
+          localField: 'loanPackage',
+          foreignField: '_id',
+          pipeline: [{ $project: { _id: 1, title: 1 } }],
+          as: 'package'
+        }
+      },
+      { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: '$package', preserveNullAndEmptyArrays: true } }
+    ]).toArray()
+
+    return {
+      statusCode: 200,
+      message: 'Success',
+      data: loans
     }
   }
 }

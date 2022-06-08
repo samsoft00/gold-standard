@@ -80,9 +80,8 @@ const payload: IMessageBody[] = [
   }
 ]
 
-@Authorize()
-@Controller({ path: '/settings' })
-export class SettingsCtrl {
+@Controller({ path: '/automated-message' })
+export class AutomatedMessageCtrl {
   MessageSettingModel: Collection<IMessageBody>
 
   constructor (@Configuration() readonly config: Configuration) {
@@ -129,3 +128,7 @@ export class SettingsCtrl {
     }
   }
 }
+
+@Authorize()
+@Controller({ path: '/settings', children: [AutomatedMessageCtrl] })
+export class SettingsCtrl {}

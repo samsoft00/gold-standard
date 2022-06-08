@@ -1,8 +1,20 @@
-import { Configuration, Inject, Injectable, Logger } from '@tsed/common'
+import { Configuration, Injectable } from '@tsed/common'
 import sgMail from '@sendgrid/mail'
-import { EmailData } from '@sendgrid/helpers/classes/email-address'
 
-interface IMailSettings {
+export type IEmailRecipient = string | { name?: string, email: string }
+
+export interface ISendMail {
+  to: IEmailRecipient | IEmailRecipient[]
+  subject?: string
+  text?: string
+  html?: string
+  templateId?: string
+  params?: {
+    [key: string]: string | any[] | any
+  }
+}
+
+export interface IMailSettings {
   name: string
   email: string
   sendgridApikey: string
@@ -13,37 +25,33 @@ interface IMailSettings {
  */
 @Injectable()
 export class MailService {
-  private readonly sender: EmailData
-
-  @Inject()
-  private readonly logger: Logger
+  private readonly sender: any
+  private readonly sendgrid = sgMail
 
   constructor (@Configuration() readonly config: Configuration) {
     const { name, email, sendgridApikey } = this.config.get<IMailSettings>('mail')
 
+    this.sendgrid.setApiKey(sendgridApikey)
     this.sender = { name, email }
-
-    sgMail.setApiKey(sendgridApikey)
   }
 
-  async send (data: any): Promise<void> {
-    const { to, subject, templateId, ...templateData } = data
+  async sendMail (mail: ISendMail): Promise<[sgMail.ClientResponse, {}]> {
+    if (!mail.templateId && !mail.subject) throw new Error('Either templateId or subject must be present') // eslint-disable-line
 
-    const payload: sgMail.MailDataRequired = {
+    const mailObject: Partial<sgMail.MailDataRequired> = {
+      subject: mail.subject,
+      dynamicTemplateData: mail.params,
+      to: mail.to,
       from: this.sender,
-      to,
-      subject,
-      templateId,
-      dynamicTemplateData: templateData
-      // personalizations: [{
-      //   to: [{ email: to }],
-      //   dynamicTemplateData: templateData
-      // }]
+      templateId: undefined
     }
-    const response = await sgMail.send(payload)
 
-    this.logger.info(`Email sent successfully with statusCode: ${response[0].statusCode}`)
-    this.logger.info(response[0].headers)
-    this.logger.info(response[0].body)
+    Object.assign(mailObject, {
+      ...(mail.templateId !== undefined && { templateId: mail.templateId }),
+      ...(mail.html !== undefined && { html: mail.html }),
+      ...(mail.text !== undefined && { text: mail.text })
+    })
+
+    return await this.sendgrid.send(mailObject as never, false)
   }
 }

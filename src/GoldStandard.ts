@@ -54,6 +54,10 @@ const REFRESH_EXP = Math.floor(Date.now() / 1000) + 60 * 60 * 24 * 1 // 7 days
     DB_URL: process.env.DB_URL,
     DB_NAME: process.env.DB_NAME,
     MAX_POOL_SIZE: process.env.MAX_POOL_SIZE
+  },
+  novu: {
+    apiKey: process.env.NOVU_API_KEY,
+    appIdentity: process.env.NOVU_APP_IDENTITY
   }
 })
 export class GoldStandard {

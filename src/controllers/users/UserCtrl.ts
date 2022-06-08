@@ -199,7 +199,32 @@ export class UserCtrl {
           as: 'next_of_kin'
         }
       },
-      { $unwind: { path: '$next_of_kin', preserveNullAndEmptyArrays: true } }
+      {
+        $lookup: {
+          from: 'kycprofiles',
+          localField: '_id',
+          foreignField: 'user',
+          as: 'kyc'
+        }
+      },
+      {
+        $lookup: {
+          from: 'cards',
+          localField: '_id',
+          foreignField: 'user',
+          as: 'cards'
+        }
+      },
+      {
+        $lookup: {
+          from: 'accounts',
+          localField: '_id',
+          foreignField: 'user',
+          as: 'accounts'
+        }
+      },
+      { $unwind: { path: '$next_of_kin', preserveNullAndEmptyArrays: true } },
+      { $unwind: { path: '$kyc', preserveNullAndEmptyArrays: true } }
     ]).toArray()
 
     if (user.length === 0) throw new NotFound(`User ID: ${userId} not found`)

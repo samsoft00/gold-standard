@@ -1,6 +1,6 @@
-import { BodyParams, Get, PathParams, Post } from '@tsed/common'
+import { BodyParams, Get, PathParams, Post, QueryParams } from '@tsed/common'
 import { Configuration, Controller } from '@tsed/di'
-import { Required } from '@tsed/schema'
+import { Put, Required } from '@tsed/schema'
 import jwt, { JwtPayload } from 'jsonwebtoken'
 import dayjs from 'dayjs'
 import Joi from 'joi'
@@ -13,8 +13,16 @@ import { AuthService } from '../../services/user/AuthService'
 import { JobType } from '../../types'
 import { MailQueue } from '../../workers/MailQueue'
 import { IEmailJob } from '../../types/interfaces/IQueueJob'
+import { Authorize } from '@tsed/passport'
 
 const INVITE_TEMPLATE = process.env.INVITE_TEMPLATE
+
+interface AdminDto {
+  email: string
+  IsDisabled: boolean
+  createdDate: Date
+  updatedDate: Date
+}
 export class AcceptInvite {
   @Required()
   password: string
@@ -31,8 +39,49 @@ export class AdminCtrl {
     this.emailQueue.init('userQueue')
   }
 
+  @Get('/')
+  async getAdmins (@QueryParams('is_disabled') isDisable: boolean): Promise<IResponseDto<AdminDto[]>> {
+    const admins = await dbo.db().collection('admins').find({
+      is_disabled: isDisable || false
+    }).toArray()
+
+    const results = admins.map(admin => {
+      return {
+        _id: admin._id,
+        email: admin.email,
+        is_disabled: admin.is_disabled,
+        created_date: admin.created_date,
+        updated_date: admin.updated_date
+      }
+    })
+
+    return {
+      statusCode: 200,
+      message: 'successful',
+      data: results as any
+    }
+  }
+
+  @Authorize()
+  @Put('/:id/disable')
+  async disableAdmin (@PathParams('id') adminId: string): Promise<any> {
+    const admin = await dbo.db().collection('admins').findOne({ _id: new dbo.Id(adminId) })
+    if (admin === null) throw new NotFound('Account not found')
+
+    await dbo.db().collection('admins').updateOne(
+      { _id: admin._id },
+      { $set: { is_disabled: true, updated_date: dayjs().format('YYYY-MM-DDTHH:mm:ss') } }
+    )
+
+    return {
+      statusCode: 200,
+      message: 'successful',
+      data: null
+    }
+  }
+
+  @Authorize()
   @Post('/invite-user')
-  // @Authorize()
   async inviteUser (@Required() @BodyParams('email') email: string): Promise<any> {
     const configKeys = this.config.get('configKeys')
 
@@ -49,11 +98,13 @@ export class AdminCtrl {
     const link = jwt.sign({ id: result.insertedId.toString() }, configKeys.AES_KEY, { expiresIn: '3h' })
 
     detach(this.emailQueue.add({
+      email,
       jobName: JobType.SEND_INVITE,
-      subject: 'You\'re invited',
       templateId: INVITE_TEMPLATE as string,
-      inviteLink: link,
-      email
+      params: {
+        inviteLink: link,
+        subject: 'You are invited'
+      }
     }))
 
     return {
@@ -107,7 +158,7 @@ export class AdminCtrl {
     const hashPassword = await this.authService.hashPassword(payload.password)
     await dbo.db().collection('admins').updateOne(
       { _id: admin._id },
-      { $set: { password: hashPassword, updated_datetime: dayjs().format('YYYY-MM-DDTHH:mm:ss') } }
+      { $set: { password: hashPassword, updated_date: dayjs().format('YYYY-MM-DDTHH:mm:ss') } }
     )
 
     return {

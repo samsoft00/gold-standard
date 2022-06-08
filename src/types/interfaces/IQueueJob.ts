@@ -8,11 +8,16 @@ export interface IQueue {
   jobName: string
 }
 
+export interface ISmsJob extends IQueue {
+  to: string
+  body: string
+}
 export interface IEmailJob extends IQueue{
-  subject: string
   templateId: string
   email: string
-  [key: string]: string
+  params: {
+    [key: string]: string
+  }
 }
 
 export interface IUserJob extends IQueue {

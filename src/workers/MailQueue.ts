@@ -1,16 +1,18 @@
-import { Configuration, Injectable } from '@tsed/common'
+import { Configuration, Inject, Injectable, Logger } from '@tsed/common'
 import Queue, { Job, JobOptions } from 'bull'
 import { ResponseError } from '@sendgrid/mail'
 
 import { detach } from '../utils/detach'
 import { IEmailJob } from '../types/interfaces/IQueueJob'
-import { MailService } from '../services/email/MailService'
-import { helpers, classes } from '@sendgrid/helpers'
+import { ISendMail, MailService } from '../services/email/MailService'
 
 @Injectable()
 export class MailQueue<T extends IEmailJob> {
   queue: Queue.Queue<T>
   protected opts: JobOptions
+
+  @Inject()
+  logger: Logger
 
   constructor (private readonly mailService: MailService,
     @Configuration() readonly config: Configuration) {
@@ -28,21 +30,20 @@ export class MailQueue<T extends IEmailJob> {
   }
 
   async queueProcessor (job: Job<T>): Promise<void> {
-    const { email, subject, templateId, ...data } = job.data
+    const { email, templateId, params } = job.data
 
     try {
-      const nameEmail = helpers.splitNameEmail(email)
+      const [name] = email.split('@', 1)
 
-      const msg = {
-        to: new classes.EmailAddress({ name: nameEmail[0], email }),
-        templateData: data,
-        subject: subject,
-        templateId: templateId
+      const msg: ISendMail = {
+        to: { name, email },
+        templateId: templateId,
+        params: { name, ...params }
       }
 
-      await this.mailService.send(msg)
+      const response = await this.mailService.sendMail(msg)
+      this.logger.info(msg, response)
     } catch (error) {
-      console.log(error)
       console.log((error as ResponseError).response.body)
     }
   }

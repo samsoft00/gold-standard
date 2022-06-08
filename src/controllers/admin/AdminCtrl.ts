@@ -2,6 +2,7 @@ import { BodyParams, Get, PathParams, Post, QueryParams } from '@tsed/common'
 import { Configuration, Controller } from '@tsed/di'
 import { Put, Required } from '@tsed/schema'
 import jwt, { JwtPayload } from 'jsonwebtoken'
+import { createHash } from 'crypto'
 import dayjs from 'dayjs'
 import Joi from 'joi'
 
@@ -17,11 +18,17 @@ import { Authorize } from '@tsed/passport'
 
 const INVITE_TEMPLATE = process.env.INVITE_TEMPLATE
 
-interface AdminDto {
+interface AddAdmin {
+  name: string
   email: string
-  IsDisabled: boolean
-  createdDate: Date
-  updatedDate: Date
+}
+interface AdminDto {
+  name: string
+  email: string
+  image_url: string
+  is_disabled: boolean
+  created_date: Date
+  updated_date: Date
 }
 export class AcceptInvite {
   @Required()
@@ -49,6 +56,8 @@ export class AdminCtrl {
       return {
         _id: admin._id,
         email: admin.email,
+        name: admin.name,
+        image_url: admin.image_url,
         is_disabled: admin.is_disabled,
         created_date: admin.created_date,
         updated_date: admin.updated_date
@@ -82,15 +91,19 @@ export class AdminCtrl {
 
   @Authorize()
   @Post('/invite-user')
-  async inviteUser (@Required() @BodyParams('email') email: string): Promise<any> {
+  async inviteUser (@Required() @BodyParams() request: AddAdmin): Promise<any> {
     const configKeys = this.config.get('configKeys')
 
-    if (!/^[+a-z0-9._-]+@[a-z0-9._-]+\.[a-z0-9_-]+$/.test(email)) {
+    if (!/^[+a-z0-9._-]+@[a-z0-9._-]+\.[a-z0-9_-]+$/.test(request.email)) {
       throw new BadRequest('Email invalid. Confirm and try again')
     }
 
+    const imageUrl = createHash('md5').update(request.email).digest('hex').toString()
+
     const result = await dbo.db().collection('admins').insertOne({
-      email,
+      name: request.name,
+      email: request.email,
+      image_url: `https://www.gravatar.com/avatar/${imageUrl}?s=200&d=identicon`,
       is_disabled: false,
       created_date: new Date()
     })
@@ -98,10 +111,11 @@ export class AdminCtrl {
     const link = jwt.sign({ id: result.insertedId.toString() }, configKeys.AES_KEY, { expiresIn: '3h' })
 
     detach(this.emailQueue.add({
-      email,
+      email: request.email,
       jobName: JobType.SEND_INVITE,
       templateId: INVITE_TEMPLATE as string,
       params: {
+        name: request.name,
         inviteLink: link,
         subject: 'You are invited'
       }

@@ -11,10 +11,11 @@ import { IResponseDto } from '../../types/interfaces/IResponseDto'
 import { detach } from '../../utils/detach'
 import { BadRequest, NotFound } from '@tsed/exceptions'
 import { AuthService } from '../../services/user/AuthService'
-import { JobType } from '../../types'
+import { AnyObject, JobType } from '../../types'
 import { MailQueue } from '../../workers/MailQueue'
 import { IEmailJob } from '../../types/interfaces/IQueueJob'
 import { Authorize } from '@tsed/passport'
+import { Endpoint } from '../../utils/constants'
 
 const INVITE_TEMPLATE = process.env.INVITE_TEMPLATE
 
@@ -92,7 +93,7 @@ export class AdminCtrl {
   @Authorize()
   @Post('/invite-user')
   async inviteUser (@Required() @BodyParams() request: AddAdmin): Promise<any> {
-    const configKeys = this.config.get('configKeys')
+    const configKeys = this.config.get<AnyObject>('configKeys')
 
     if (!/^[+a-z0-9._-]+@[a-z0-9._-]+\.[a-z0-9_-]+$/.test(request.email)) {
       throw new BadRequest('Email invalid. Confirm and try again')
@@ -108,15 +109,16 @@ export class AdminCtrl {
       created_date: new Date()
     })
 
-    const link = jwt.sign({ id: result.insertedId.toString() }, configKeys.AES_KEY, { expiresIn: '3h' })
+    const link = jwt.sign({ id: result.insertedId.toString() }, String(configKeys.AES_KEY), { expiresIn: '3h' })
+    const inviteLink = `${String(configKeys.FE_BASE_URL)}${Endpoint.AcceptInvite}?link=${link}`
 
     detach(this.emailQueue.add({
       email: request.email,
       jobName: JobType.SEND_INVITE,
       templateId: INVITE_TEMPLATE as string,
       params: {
+        inviteLink,
         name: request.name,
-        inviteLink: link,
         subject: 'You are invited'
       }
     }))

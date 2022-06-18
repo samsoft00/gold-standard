@@ -3,43 +3,12 @@ import { Configuration, Controller } from '@tsed/di'
 import { Authorize } from '@tsed/passport'
 import dayjs from 'dayjs'
 import Decimal from 'decimal.js'
-import { Collection, Document, ObjectId, Sort } from 'mongodb'
+import { Collection, ObjectId, Sort } from 'mongodb'
 
 import dbMgr from '../../services/MongoService'
+import { LoanStatus, ILoanSortBy, ILoanTypes, ILoan, months } from '../../types'
 import { IResponseDto } from '../../types/interfaces/IResponseDto'
 import { PaginateResponse } from '../../types/interfaces/PaginateResponse'
-import { months } from '../users/UserCtrl'
-
-enum LoanStatus {
-  Active = 'active',
-  Inactive = 'inactive',
-  Declined = 'declined',
-}
-
-interface ILoan extends Document{
-  _id: string
-  userId: string | ObjectId
-  status: LoanStatus
-  loanPackage: string | ObjectId
-  amount: number
-  reason: string
-  additionalInfo: any
-}
-
-interface ILoanTypes extends Document {
-  _id: ObjectId
-  title: string
-}
-
-interface ILoanSortBy {
-  limit: number
-  amount?: number
-  loan_status: string
-  month_joined?: string
-  loanType?: ObjectId
-  previous_cursor?: string
-  next_cursor?: string
-}
 
 const formatLoanQuery = (query: ILoanSortBy): any => {
   query.month_joined = query.month_joined?.toLowerCase() ?? ''

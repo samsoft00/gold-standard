@@ -1,12 +1,13 @@
-import { Get, PathParams, QueryParams } from '@tsed/common'
+import { BodyParams, Get, PathParams, Put, QueryParams } from '@tsed/common'
 import { Configuration, Controller } from '@tsed/di'
+import { BadRequest } from '@tsed/exceptions'
 import { Authorize } from '@tsed/passport'
 import dayjs from 'dayjs'
 import Decimal from 'decimal.js'
 import { Collection, ObjectId, Sort } from 'mongodb'
 
 import dbMgr from '../../services/MongoService'
-import { LoanStatus, ILoanSortBy, ILoanTypes, ILoan, months } from '../../types'
+import { ILoanSortBy, ILoanTypes, ILoan, months } from '../../types'
 import { IResponseDto } from '../../types/interfaces/IResponseDto'
 import { PaginateResponse } from '../../types/interfaces/PaginateResponse'
 
@@ -23,7 +24,7 @@ const formatLoanQuery = (query: ILoanSortBy): any => {
       }
     }),
     ...(query.amount !== undefined && { amount: { $gte: new Decimal(query.amount).toNumber() } }),
-    ...(query.loan_status in LoanStatus && { status: query.loan_status })
+    ...(query.loan_status !== undefined && { status: { $eq: query.loan_status } })
   }
 }
 
@@ -61,10 +62,8 @@ export class LoanCtrl {
     } else if (qryNext) {
       q._id = { $lt: new dbMgr.Id(query.next_cursor) }
     }
-    console.log(q, limit, sort)
-    const totalLoan = await this.Loan.countDocuments()
 
-    const loanList = await this.Loan.aggregate([
+    const loanPipe = [
       { $match: q },
       {
         $lookup: {
@@ -86,7 +85,16 @@ export class LoanCtrl {
       },
       { $unwind: { path: '$package', preserveNullAndEmptyArrays: true } },
       { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } }
-    ]).limit(limit).sort(sort).toArray()
+    ]
+
+    const { loanList, count } = await new Promise<{loanList: any[], count: number}>((resolve, reject) => {
+      Promise.all([
+        this.Loan.aggregate(loanPipe).limit(limit).sort(sort).toArray(),
+        this.Loan.countDocuments(q, {})
+      ])
+        .then(([loanList, count]) => resolve({ loanList, count }))
+        .catch(reject)
+    })
 
     if (qryPrev) loanList.reverse()
 
@@ -100,7 +108,7 @@ export class LoanCtrl {
       hasPrev = check !== null
     }
     // console.log(loanList, totalLoan)
-    return new PaginateResponse(loanList, totalLoan, hasNext, hasPrev)
+    return new PaginateResponse(loanList, count, hasNext, hasPrev)
   }
 
   @Get('/loan-types')
@@ -185,6 +193,26 @@ export class LoanCtrl {
       statusCode: 200,
       message: 'Success',
       data: loans
+    }
+  }
+
+  // Accept || Decline loan
+  @Put('/update-loan/:loanId')
+  async UpdateLoanStatus (
+    @BodyParams() body: any,
+      @PathParams('loanId') loanID: string): Promise<IResponseDto<any>> {
+    if (!dbMgr.Id.isValid(loanID)) throw new BadRequest('Invalid loan ID')
+
+    if (!['active', 'inactive', 'declined'].includes(body.status)) throw new BadRequest('Invalid loan status')
+
+    await this.Loan.findOneAndUpdate(
+      { _id: new dbMgr.Id(loanID) },
+      { $set: { status: body.status } })
+
+    return {
+      statusCode: 200,
+      message: 'Success',
+      data: {}
     }
   }
 }

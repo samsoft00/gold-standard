@@ -1,0 +1,41 @@
+### register a drone;
+POST http://localhost:3000/drone 
+content-type: application/json
+
+{
+    "serialNumber": "32d03d9b330d049bf925a459fdd072a0",
+    "model": "Middleweight",
+    "weight": 500,
+    "battery": 70,
+    "state": "IDLE"
+}
+
+### get all drones
+GET http://localhost:3116/api/v1/dashboard/monetary-transactions?from_month=january&to_month=august HTTP/1.1
+
+### Analytics
+GET http://localhost:3116/api/v1/dashboard/analytics HTTP/1.1
+
+### Audience
+GET http://localhost:3116/api/v1/dashboard/audience HTTP/1.1
+
+### Recent Transaction
+GET http://localhost:3116/api/v1/dashboard/recent-transactions HTTP/1.1
+
+### Overdue Loan
+GET http://localhost:3116/api/v1/dashboard/overdue-loans HTTP/1.1
+
+##Article
+### Create article
+POST http://localhost:3116/api/v1/article
+content-type: application/json
+
+{
+    "topic": "simple artile",
+    "subtitle": "simple artile about h20",
+    "content": "Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.",
+    "image_path": "https://i.picsum.photos/id/866/200/300.jpg"
+}
+
+### Fetch Articles
+GET http://localhost:3116/api/v1/article?limit=2 HTTP/1.1

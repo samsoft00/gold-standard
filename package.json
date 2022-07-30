@@ -71,6 +71,7 @@
     "dotenv": "^16.0.0",
     "email-validator": "^2.0.4",
     "express": "^4.17.2",
+    "flutterwave-node-v3": "^1.0.9",
     "google-libphonenumber": "^3.2.27",
     "got": "^11.8.2",
     "helmet": "^5.0.2",

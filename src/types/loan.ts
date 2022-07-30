@@ -30,3 +30,21 @@ export interface ILoanSortBy {
   previous_cursor?: string
   next_cursor?: string
 }
+
+export enum LoanRepaymentType {
+  OneTime = 'one-time',
+  Installmental = 'installmental'
+}
+
+export interface ILoanRepayment {
+  _id: string
+  loanId: string | ObjectId
+  status: boolean
+  type: LoanRepaymentType
+  date: Date | null
+  dates: Set<Date> | null
+  cardId: string | ObjectId
+  repaid: number
+  total: number
+  loan: any
+}

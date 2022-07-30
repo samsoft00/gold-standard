@@ -29,6 +29,28 @@ export interface UserList {
   createdAt: Date
 }
 
+export interface IUser {
+  _id: string
+  name: string
+  email: string
+  phoneNumber: number
+  gender: string
+  dateOfBirth: Date | null
+  profileImageUrl: string
+  password: string
+  type: string
+  nextOfKin: string | ObjectId | null
+  bvn: number | null
+  bvn_verified: boolean
+  customerCode: string | null
+  verified: boolean
+  verification_code: string | null
+  active: boolean
+  isBanned: boolean
+  isDeleted: boolean
+  createdAt: Date
+}
+
 export const months: { [key: string]: number } = {
   january: 0,
   february: 1,
@@ -42,4 +64,19 @@ export const months: { [key: string]: number } = {
   october: 9,
   november: 10,
   december: 11
+}
+
+export const monthToStr: { [key: string]: string } = {
+  '01': 'january',
+  '02': 'february',
+  '03': 'march',
+  '04': 'april',
+  '05': 'may',
+  '06': 'june',
+  '07': 'july',
+  '08': 'august',
+  '09': 'september',
+  10: 'october',
+  11: 'november',
+  12: 'december'
 }

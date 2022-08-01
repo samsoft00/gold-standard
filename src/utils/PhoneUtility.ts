@@ -1,9 +1,11 @@
+import { Injectable } from '@tsed/di'
 import { BadRequest } from '@tsed/exceptions'
 import phoneUtil from 'google-libphonenumber'
 
 const phoneUtilInstance = phoneUtil.PhoneNumberUtil.getInstance()
 const { E164 } = phoneUtil.PhoneNumberFormat
 
+@Injectable()
 export class PhoneUtility {
   /**
      * Method to format phone number

@@ -41,7 +41,7 @@ import dbMgr from '../../services/MongoService'
 
 import { Get, QueryParams, Req } from '@tsed/common'
 import { Configuration, Controller } from '@tsed/di'
-import { Collection, Document, Sort } from 'mongodb'
+import { Collection, Document, ObjectId, Sort } from 'mongodb'
 import { AnyObject, ILoanRepayment, IResponseDto, months, monthToStr } from '../../types'
 import qs from 'query-string'
 import dayjs from 'dayjs'
@@ -71,6 +71,7 @@ interface RecentTransactions {
 }
 
 interface OverDueLoans {
+  loanId: ObjectId
   full_name: string
   loan_amount: number
   loan_repayment_type: string
@@ -368,6 +369,7 @@ export class OverviewCtrl {
 
     for (const repay of repayment) {
       overDueLoans.push({
+        loanId: repay.loan[0]._id,
         full_name: `${repay.loan[0].name as string}`,
         loan_repayment_type: repay.type,
         loan_amount: repay.total,

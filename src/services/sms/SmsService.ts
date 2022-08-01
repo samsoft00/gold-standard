@@ -21,13 +21,14 @@ export class SmsService {
      * Author: Oyewole Abayomi
      */
   constructor (@Configuration() readonly config: Configuration) {
-    const { accountSid, authToken, phoneNumber } = this.config.get<ISmsSettings>('sms')
+    const { accountSid, authToken, phoneNumber } = this.config.get<ISmsSettings>('twilio')
     this.sender = phoneNumber
 
     this.twilio = twilio(accountSid, authToken)
   }
 
   async send (data: MessageListInstanceCreateOptions): Promise<void> {
+    console.log(data, this.sender)
     await this.twilio.messages.create({
       body: data.body,
       from: this.sender,

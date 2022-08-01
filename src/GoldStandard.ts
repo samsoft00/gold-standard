@@ -8,6 +8,7 @@ import morgan from 'morgan'
 import helmet from 'helmet'
 import express from 'express'
 import compress from 'compression'
+import session from 'express-session'
 
 import './errors/ErrorHandler'
 import { HomeCtrl } from './controllers/HomeCtrl'
@@ -87,6 +88,16 @@ export class GoldStandard {
       .use(helmet({ contentSecurityPolicy: false }))
       .use(morgan('dev'))
       .use(express.json())
+      .use(session({
+        secret: 'SSbQeThWmZq4t6w9z!',
+        resave: true,
+        saveUninitialized: true,
+        cookie: {
+          path: '/',
+          httpOnly: true,
+          secure: false
+        }
+      }))
       .use(
         express.urlencoded({
           extended: true
